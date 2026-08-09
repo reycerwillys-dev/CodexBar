@@ -669,12 +669,6 @@ public struct TTYCommandRunner {
             guard !cleanedUp else { return }
             cleanedUp = true
 
-            if !didExceedOutputLimit, let launchedProcess, launchedProcess.isRunning {
-                Self.log.debug("PTY stopping", metadata: ["binary": binaryName])
-                let exitData = Data("/exit\n".utf8)
-                try? writeAllToPrimary(exitData)
-            }
-
             try? secondaryHandle.close()
 
             guard let launchedProcess else {
@@ -687,7 +681,15 @@ public struct TTYCommandRunner {
                 // and the scoped abort escalates within its fixed grace window.
                 try? primaryHandle.close()
                 launchedProcess.abortSynchronously()
+            } else if launchedProcess.isRunning {
+                // A forced stop still owns a live root, so its descendants and dedicated process group
+                // are enough to terminate it without the load-sensitive system-wide output-holder scan.
+                Self.log.debug("PTY hard stopping", metadata: ["binary": binaryName])
+                launchedProcess.abortSynchronously()
+                try? primaryHandle.close()
             } else {
+                // Once the root has exited, sweep output holders to catch detached children that escaped
+                // both the process tree and process group while retaining the PTY descriptor.
                 launchedProcess.terminateSynchronously()
                 try? primaryHandle.close()
             }
