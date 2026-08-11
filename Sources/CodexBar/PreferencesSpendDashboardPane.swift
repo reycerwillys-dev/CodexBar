@@ -475,7 +475,7 @@ private struct SpendSummaryValue: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text(self.value)
-                    .font(.system(.title2, design: .rounded, weight: .semibold))
+                    .font(.system(.title2, design: .rounded).weight(.semibold))
                     .monospacedDigit()
             }
         }

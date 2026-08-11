@@ -4,14 +4,15 @@ import Perception
 import QuartzCore
 
 /// Minimal display link driver using NSScreen.displayLink on macOS 15+,
-/// and CVDisplayLink on macOS 14.
+/// and CVDisplayLink on macOS 12–14.
 /// Publishes ticks on the main thread at the requested frame rate.
 @MainActor
 @Perceptible
 final class DisplayLinkDriver {
-    // Published counter used to drive SwiftUI updates.
+    /// Published counter used to drive SwiftUI updates.
     var tick: Int = 0
-    private var displayLink: CADisplayLink?
+    // Type-erased because CADisplayLink itself is unavailable to macOS 12–13 deployment targets.
+    private var displayLink: AnyObject?
     private var cvDisplayLink: CVDisplayLink?
     private var targetInterval: CFTimeInterval = 1.0 / 60.0
     private var lastTickTimestamp: CFTimeInterval = 0
@@ -42,12 +43,19 @@ final class DisplayLinkDriver {
     }
 
     func stop() {
-        self.displayLink?.invalidate()
+        if #available(macOS 14, *) {
+            self.invalidateDisplayLink()
+        }
         self.displayLink = nil
         if let cvDisplayLink = self.cvDisplayLink {
             CVDisplayLinkStop(cvDisplayLink)
         }
         self.cvDisplayLink = nil
+    }
+
+    @available(macOS 14, *)
+    private func invalidateDisplayLink() {
+        (self.displayLink as? CADisplayLink)?.invalidate()
     }
 
     @objc private func step(_: AnyObject) {

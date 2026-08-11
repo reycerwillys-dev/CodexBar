@@ -331,8 +331,7 @@ struct DebugPane: View {
                         .pickerStyle(.segmented)
                         .frame(width: 360)
 
-                        TextField(L("Simulated error text"), text: self.$simulatedErrorText, axis: .vertical)
-                            .lineLimit(4)
+                        self.simulatedErrorEditor
 
                         HStack(spacing: 12) {
                             Button {
@@ -522,6 +521,20 @@ struct DebugPane: View {
                 .foregroundStyle(value == nil ? .secondary : .primary)
         }
     }
+
+    #if DEBUG
+    @ViewBuilder
+    private var simulatedErrorEditor: some View {
+        if #available(macOS 13, *) {
+            TextField(L("Simulated error text"), text: self.$simulatedErrorText, axis: .vertical)
+                .lineLimit(4)
+        } else {
+            TextEditor(text: self.$simulatedErrorText)
+                .frame(minHeight: 72, maxHeight: 72)
+                .accessibilityLabel(L("Simulated error text"))
+        }
+    }
+    #endif
 
     private func loadClaudeDump() {
         self.isLoadingLog = true

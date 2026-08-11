@@ -1,5 +1,16 @@
 import SwiftUI
 
+extension View {
+    @ViewBuilder
+    fileprivate func settingsButtonMenuStyle() -> some View {
+        if #available(macOS 13, *) {
+            self.menuStyle(.button)
+        } else {
+            self.menuStyle(.borderlessButton)
+        }
+    }
+}
+
 /// Menu-backed settings selector that avoids disabled `Picker` items on macOS 27 when built with the macOS 26 SDK.
 struct SettingsMenuPicker<Value: Hashable, Label: View, OptionLabel: View>: View {
     @Binding private var selection: Value
@@ -38,7 +49,7 @@ struct SettingsMenuPicker<Value: Hashable, Label: View, OptionLabel: View>: View
                 self.optionLabel(self.selection)
                     .foregroundStyle(.primary)
             }
-            .menuStyle(.button)
+            .settingsButtonMenuStyle()
             .buttonStyle(.borderless)
             .fixedSize()
         } label: {

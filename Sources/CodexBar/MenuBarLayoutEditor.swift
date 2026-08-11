@@ -49,6 +49,15 @@ extension MenuBarLayoutDragItem: Transferable {
 
 extension View {
     @ViewBuilder
+    fileprivate func menuBarLayoutButtonMenuStyle() -> some View {
+        if #available(macOS 13, *) {
+            self.menuStyle(.button)
+        } else {
+            self.menuStyle(.borderlessButton)
+        }
+    }
+
+    @ViewBuilder
     fileprivate func codexbarDraggable(_ item: MenuBarLayoutDragItem) -> some View {
         if #available(macOS 13, *) {
             self.draggable(item)
@@ -341,7 +350,7 @@ struct MenuBarLayoutEditor: View {
             } label: {
                 Label(self.scopeLabel, systemImage: "scope")
             }
-            .menuStyle(.button)
+            .menuBarLayoutButtonMenuStyle()
             .help(L("menu_bar_layout_scope_help"))
 
             if case let .provider(provider) = self.scope,
@@ -370,7 +379,7 @@ struct MenuBarLayoutEditor: View {
                         .font(.caption2)
                 }
             }
-            .menuStyle(.button)
+            .menuBarLayoutButtonMenuStyle()
             .accessibilityLabel(L("menu_bar_layout_preset"))
         }
     }

@@ -1,9 +1,24 @@
-import ServiceManagement
+import Foundation
 import Testing
 @testable import CodexBar
 
 @MainActor
 struct LaunchAtLoginManagerTests {
+    @Test
+    func `legacy launch agent opens the app bundle in an Aqua session`() throws {
+        let data = try LaunchAtLoginManager.legacyLaunchAgentData(bundleIdentifier: "com.example.CodexBar")
+        let propertyList = try #require(
+            PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any])
+
+        #expect(propertyList["Label"] as? String == "com.steipete.codexbar.launch-at-login")
+        #expect(propertyList["LimitLoadToSessionType"] as? String == "Aqua")
+        #expect(propertyList["ProcessType"] as? String == "Interactive")
+        #expect(propertyList["RunAtLoad"] as? Bool == true)
+        #expect(
+            propertyList["ProgramArguments"] as? [String] ==
+                ["/usr/bin/open", "-g", "-b", "com.example.CodexBar"])
+    }
+
     @Test
     func `set enabled skips registration when service is already enabled`() {
         var registerCalls = 0

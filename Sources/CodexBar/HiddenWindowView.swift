@@ -100,7 +100,11 @@ final class KeepaliveWindowConfiguratorView: NSView {
         window.identifier = NSUserInterfaceItemIdentifier("CodexBarLifecycleKeepalive")
         // Make the keepalive window truly invisible and non-interactive.
         window.styleMask = [.borderless]
-        window.collectionBehavior = [.auxiliary, .ignoresCycle, .transient, .canJoinAllSpaces]
+        var collectionBehavior: NSWindow.CollectionBehavior = [.ignoresCycle, .transient, .canJoinAllSpaces]
+        if #available(macOS 13, *) {
+            collectionBehavior.insert(.auxiliary)
+        }
+        window.collectionBehavior = collectionBehavior
         window.isExcludedFromWindowsMenu = true
         window.level = .floating
         window.isOpaque = false

@@ -5,6 +5,17 @@ import AppKit
 import Perception
 import SwiftUI
 
+extension View {
+    @ViewBuilder
+    fileprivate func quotaWarningListRowSeparatorHidden() -> some View {
+        if #available(macOS 13, *) {
+            self.listRowSeparator(.hidden)
+        } else {
+            self
+        }
+    }
+}
+
 struct QuotaWarningSettingsVisibility: Equatable {
     let showsThresholdControls: Bool
     let showsDeliveryControls: Bool
@@ -52,7 +63,7 @@ struct GlobalQuotaWarningSettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 22)
             .background(FocusResigningBackground())
-            .listRowSeparator(.hidden)
+            .quotaWarningListRowSeparatorHidden()
         }
     }
 }
@@ -73,7 +84,7 @@ struct ProviderQuotaWarningSettingsView: View {
                     self.windowRow(.weekly)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .listRowSeparator(.hidden)
+                .quotaWarningListRowSeparatorHidden()
                 .disabled(!self.controlsEnabled)
                 .opacity(self.controlsEnabled ? 1 : 0.45)
             } header: {

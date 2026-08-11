@@ -24,7 +24,7 @@ final class ScreenConfettiOverlayController {
         }
 
         let palette = colors.map { color in
-            Color(red: color.red, green: color.green, blue: color.blue)
+            VortexSystem.Color(red: color.red, green: color.green, blue: color.blue, opacity: 1)
         }
         self.windows = screens.map { screen in
             let frame = screen.frame
@@ -122,9 +122,8 @@ private struct ScreenConfettiOverlayView: View {
     private static let counterclockwiseRotationAngles: [Double] = [90, 126, 162, 198, 234, 270]
 
     let origin: CGPoint
-    let colors: [Color]
+    let colors: [VortexSystem.Color]
 
-    @Environment(\.self) private var environment
     @State private var visiblePhaseCount = 0
 
     var body: some View {
@@ -217,15 +216,6 @@ private struct ScreenConfettiOverlayView: View {
         let canvasOrigin = self.canvasOrigin(in: size, lateralOffset: lateralOffset)
         let normalizedX = size.width > 0 ? canvasOrigin.x / size.width : 1
         let normalizedY = size.height > 0 ? canvasOrigin.y / size.height : 0
-        let resolvedColors = self.colors.map { color -> VortexSystem.Color in
-            let components = color.resolve(in: self.environment)
-            return VortexSystem.Color(
-                red: Double(components.red),
-                green: Double(components.green),
-                blue: Double(components.blue),
-                opacity: Double(components.opacity))
-        }
-
         let explosion = VortexSystem(
             tags: ["confetti-bar", "confetti-dot", "confetti-pill"],
             spawnOccasion: .onDeath,
@@ -242,7 +232,7 @@ private struct ScreenConfettiOverlayView: View {
             dampingFactor: 0.18,
             angularSpeed: [0, 0, 3],
             angularSpeedVariation: [2, 2, 14],
-            colors: .random(resolvedColors),
+            colors: .random(self.colors),
             size: 0.74,
             sizeVariation: 0.26,
             sizeMultiplierAtDeath: 0.94,
