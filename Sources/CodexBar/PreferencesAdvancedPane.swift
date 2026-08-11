@@ -1,6 +1,6 @@
 import CodexBarCore
-import SwiftUI
 import Perception
+import SwiftUI
 
 @MainActor
 struct AdvancedPane: View {
@@ -10,7 +10,6 @@ struct AdvancedPane: View {
     @State private var cliStatus: String?
 
     var body: some View {
-
         WithPerceptionTracking {
             Form {
                 Section {
@@ -69,9 +68,7 @@ struct AdvancedPane: View {
             .codexbarGroupedFormStyle()
             .toggleStyle(.switch)
             .codexbarScrollContentBackgroundHidden()
-
         }
-
     }
 }
 

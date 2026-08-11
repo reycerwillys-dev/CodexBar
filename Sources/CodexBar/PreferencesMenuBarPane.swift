@@ -1,6 +1,6 @@
 import CodexBarCore
-import SwiftUI
 import Perception
+import SwiftUI
 
 @MainActor
 struct MenuBarPane: View {
@@ -19,7 +19,6 @@ struct MenuBarPane: View {
     }
 
     var body: some View {
-
         WithPerceptionTracking {
             Form {
                 Section {
@@ -109,9 +108,7 @@ struct MenuBarPane: View {
                 }
                 self.reconcileOverviewSelection()
             }
-
         }
-
     }
 
     private var overviewProviderRow: some View {

@@ -27,7 +27,8 @@ struct ProviderDetailSectionsContent: View {
                     .textCase(.uppercase)
                     .lineLimit(1)
             }
-            ForEach(Array(section.rows.enumerated()), id: \.offset) { row in
+            ForEach(Array(section.rows.enumerated()), id: \.offset) { item in
+                let row = item.element
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(row.label)
                         .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
@@ -94,7 +95,8 @@ private struct ProviderDetailChartContent: View {
         GeometryReader { geometry in
             let scale = UsageChartScale(values: self.chart.points.map(\.value))
             HStack(alignment: .bottom, spacing: 2) {
-                ForEach(Array(self.chart.points.enumerated()), id: \.offset) { point in
+                ForEach(Array(self.chart.points.enumerated()), id: \.offset) { item in
+                    let point = item.element
                     RoundedRectangle(cornerRadius: 1.5, style: .continuous)
                         .fill(self.fillColor(value: point.value, scale: scale))
                         .frame(maxWidth: .infinity)

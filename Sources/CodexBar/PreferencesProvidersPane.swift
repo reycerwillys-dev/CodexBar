@@ -1,7 +1,7 @@
 import AppKit
 import CodexBarCore
-import SwiftUI
 import Perception
+import SwiftUI
 
 @MainActor
 enum ProviderSettingsRefreshInteraction {
@@ -54,7 +54,6 @@ struct ProvidersPane: View {
     }
 
     var body: some View {
-
         WithPerceptionTracking {
             ProviderDetailView(
                 provider: self.provider,
@@ -131,9 +130,7 @@ struct ProvidersPane: View {
                             Text(active.message)
                         }
                     })
-
         }
-
     }
 
     static func filteredProviders(

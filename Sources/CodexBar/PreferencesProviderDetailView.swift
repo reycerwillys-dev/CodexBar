@@ -1,6 +1,6 @@
 import CodexBarCore
-import SwiftUI
 import Perception
+import SwiftUI
 
 enum ProviderMetricInlinePresentation: Equatable {
     case progress
@@ -112,7 +112,6 @@ struct ProviderDetailView<SupplementaryContent: View>: View {
     }
 
     var body: some View {
-
         WithPerceptionTracking {
             Form {
                 Section {
@@ -208,9 +207,7 @@ struct ProviderDetailView<SupplementaryContent: View>: View {
             }
             .codexbarGroupedFormStyle()
             .codexbarScrollContentBackgroundHidden()
-
         }
-
     }
 }
 
@@ -223,7 +220,6 @@ private struct ProviderDetailHeaderRow: View {
     let onRefresh: () -> Void
 
     var body: some View {
-
         WithPerceptionTracking {
             HStack(alignment: .center, spacing: 12) {
                 ProviderDetailBrandIcon(provider: self.provider)
@@ -253,9 +249,7 @@ private struct ProviderDetailHeaderRow: View {
                     .controlSize(.small)
             }
             .padding(.vertical, 2)
-
         }
-
     }
 
     private var detailSubtitle: String {
@@ -276,7 +270,6 @@ private struct ProviderDetailBrandIcon: View {
     let provider: UsageProvider
 
     var body: some View {
-
         WithPerceptionTracking {
             if let brand = ProviderBrandIcon.image(for: self.provider) {
                 Image(nsImage: brand)
@@ -291,9 +284,7 @@ private struct ProviderDetailBrandIcon: View {
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
             }
-
         }
-
     }
 }
 
@@ -305,10 +296,11 @@ private struct ProviderDetailInfoRows: View {
     let model: UsageMenuCardView.Model
 
     var body: some View {
-
         WithPerceptionTracking {
             ProviderDetailInfoRow(label: L("Source"), value: self.store.sourceLabel(for: self.provider))
-            ProviderDetailInfoRow(label: L("Version"), value: self.store.version(for: self.provider) ?? L("not detected"))
+            ProviderDetailInfoRow(
+                label: L("Version"),
+                value: self.store.version(for: self.provider) ?? L("not detected"))
             ProviderDetailInfoRow(label: L("Updated"), value: self.updatedText)
 
             if let status = self.store.status(for: self.provider) {
@@ -333,9 +325,7 @@ private struct ProviderDetailInfoRows: View {
             {
                 ProviderDetailInfoRow(label: planRow.label, value: planRow.value)
             }
-
         }
-
     }
 
     private var updatedText: String {
@@ -357,7 +347,6 @@ private struct ProviderDetailInfoRow: View {
     let value: String
 
     var body: some View {
-
         WithPerceptionTracking {
             CodexBarLabeledContent(self.label) {
                 Text(self.value)
@@ -366,9 +355,7 @@ private struct ProviderDetailInfoRow: View {
                     .lineLimit(2)
                     .textSelection(.enabled)
             }
-
         }
-
     }
 }
 
@@ -406,7 +393,6 @@ struct ProviderMetricsInlineView: View {
     }
 
     var body: some View {
-
         WithPerceptionTracking {
             let hasMetrics = !self.model.metrics.isEmpty
             let hasUsageNotes = !self.model.usageNotes.isEmpty
@@ -429,8 +415,8 @@ struct ProviderMetricsInlineView: View {
 
                 if hasUsageNotes {
                     VStack(alignment: .leading, spacing: 4) {
-                        ForEach(Array(self.model.usageNotes.enumerated()), id: \.offset) { note in
-                            Text(note)
+                        ForEach(Array(self.model.usageNotes.enumerated()), id: \.offset) { item in
+                            Text(item.element)
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(2)
@@ -458,17 +444,16 @@ struct ProviderMetricsInlineView: View {
                         title: L("Cost"),
                         value: tokenUsage.sessionLine)
                     ProviderMetricInlineTextRow(title: "", value: tokenUsage.monthLine)
-                    if ProviderDescriptorRegistry.descriptor(for: self.model.provider).tokenCost.showsHintInProviderDetails,
-                       let hint = tokenUsage.hintLine,
-                       !hint.isEmpty
+                    if ProviderDescriptorRegistry.descriptor(for: self.model.provider).tokenCost
+                        .showsHintInProviderDetails,
+                        let hint = tokenUsage.hintLine,
+                        !hint.isEmpty
                     {
                         ProviderMetricInlineTextRow(title: "", value: hint)
                     }
                 }
             }
-
         }
-
     }
 
     private var placeholderText: String {
@@ -499,7 +484,6 @@ private struct ProviderMetricInlineRow: View {
     let progressColor: Color
 
     var body: some View {
-
         WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 4) {
                 switch ProviderDetailView<EmptyView>.metricInlinePresentation(self.metric) {
@@ -555,9 +539,7 @@ private struct ProviderMetricInlineRow: View {
                 }
             }
             .padding(.vertical, 2)
-
         }
-
     }
 }
 
@@ -565,7 +547,6 @@ private struct ProviderCodexResetCreditsInlineRow: View {
     let presentation: CodexResetCreditsPresentation
 
     var body: some View {
-
         WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -591,9 +572,7 @@ private struct ProviderCodexResetCreditsInlineRow: View {
             .padding(.vertical, 2)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(self.presentation.accessibilityLabel)
-
         }
-
     }
 }
 
@@ -602,7 +581,6 @@ private struct ProviderMetricInlineTextRow: View {
     let value: String
 
     var body: some View {
-
         WithPerceptionTracking {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 if !self.title.isEmpty {
@@ -615,9 +593,7 @@ private struct ProviderMetricInlineTextRow: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.trailing)
             }
-
         }
-
     }
 }
 
@@ -626,7 +602,6 @@ private struct ProviderMetricInlineCostRow: View {
     let progressColor: Color
 
     var body: some View {
-
         WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -655,8 +630,6 @@ private struct ProviderMetricInlineCostRow: View {
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .padding(.vertical, 2)
-
         }
-
     }
 }

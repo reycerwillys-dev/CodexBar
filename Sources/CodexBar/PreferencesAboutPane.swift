@@ -106,7 +106,7 @@ struct AboutPane: View {
                         .shadow(color: self.iconHover ? .accentColor.opacity(0.25) : .clear, radius: 6)
                 }
                 .buttonStyle(.plain)
-                .focusEffectDisabled()
+                .codexbarFocusEffectDisabled()
                 .onHover { hovering in
                     withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
                         self.iconHover = hovering

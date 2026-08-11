@@ -1,7 +1,7 @@
 import AppKit
 import CodexBarCore
-import SwiftUI
 import Perception
+import SwiftUI
 
 @MainActor
 struct MenuContent: View {
@@ -13,7 +13,6 @@ struct MenuContent: View {
     let actions: MenuActions
 
     var body: some View {
-
         WithPerceptionTracking {
             let descriptor = MenuDescriptor.build(
                 provider: self.provider,
@@ -25,8 +24,8 @@ struct MenuContent: View {
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(Array(descriptor.sections.enumerated()), id: \.offset) { index, section in
                     VStack(alignment: .leading, spacing: 4) {
-                        ForEach(Array(section.entries.enumerated()), id: \.offset) { entry in
-                            self.row(for: entry)
+                        ForEach(Array(section.entries.enumerated()), id: \.offset) { item in
+                            self.row(for: item.element)
                         }
                     }
                     if index < descriptor.sections.count - 1 {
@@ -37,9 +36,7 @@ struct MenuContent: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .frame(minWidth: 260, alignment: .leading)
-
         }
-
     }
 
     @ViewBuilder
@@ -91,7 +88,8 @@ struct MenuContent: View {
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(title)
-                ForEach(Array(submenuItems.enumerated()), id: \.offset) { submenuItem in
+                ForEach(Array(submenuItems.enumerated()), id: \.offset) { item in
+                    let submenuItem = item.element
                     HStack(spacing: 8) {
                         if submenuItem.isChecked {
                             Image(systemName: "checkmark")
@@ -212,16 +210,13 @@ struct StatusIconView: View {
     let provider: UsageProvider
 
     var body: some View {
-
         WithPerceptionTracking {
             Image(nsImage: self.icon)
                 .renderingMode(.template)
                 .interpolation(.none)
                 .accessibilityLabel(self.accessibilityLabel)
                 .accessibilityValue(self.accessibilityValue)
-
         }
-
     }
 
     private var accessibilityLabel: String {

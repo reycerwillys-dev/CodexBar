@@ -1,7 +1,7 @@
 import AppKit
 import CodexBarCore
-import SwiftUI
 import Perception
+import SwiftUI
 
 enum AppLanguage: String, CaseIterable, Identifiable {
     case system = ""
@@ -119,7 +119,6 @@ struct GeneralPane: View {
     @Perception.Bindable var settings: SettingsStore
 
     var body: some View {
-
         WithPerceptionTracking {
             Form {
                 Section {
@@ -219,8 +218,6 @@ struct GeneralPane: View {
             .toggleStyle(.switch)
             .codexbarScrollContentBackgroundHidden()
             .background(FocusResigningBackground())
-
         }
-
     }
 }

@@ -2,8 +2,8 @@ import CodexBarCore
 #if os(macOS)
 import AppKit
 #endif
-import SwiftUI
 import Perception
+import SwiftUI
 
 struct QuotaWarningSettingsVisibility: Equatable {
     let showsThresholdControls: Bool
@@ -26,7 +26,6 @@ struct GlobalQuotaWarningSettingsView: View {
     }
 
     var body: some View {
-
         WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 10) {
                 if self.showsThresholdControls {
@@ -54,9 +53,7 @@ struct GlobalQuotaWarningSettingsView: View {
             .padding(.leading, 22)
             .background(FocusResigningBackground())
             .listRowSeparator(.hidden)
-
         }
-
     }
 }
 
@@ -69,7 +66,6 @@ struct ProviderQuotaWarningSettingsView: View {
     @Perception.Bindable var settings: SettingsStore
 
     var body: some View {
-
         WithPerceptionTracking {
             Section {
                 VStack(alignment: .leading, spacing: 8) {
@@ -86,9 +82,7 @@ struct ProviderQuotaWarningSettingsView: View {
                 SettingsSectionFooter(self.footerText)
             }
             .background(FocusResigningBackground())
-
         }
-
     }
 
     var controlsEnabled: Bool {
@@ -261,16 +255,13 @@ private struct QuotaWarningWindowThresholdRows: View {
     @Perception.Bindable var settings: SettingsStore
 
     var body: some View {
-
         WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 8) {
                 self.windowThresholdRow(.session)
                 self.windowThresholdRow(.weekly)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-
         }
-
     }
 
     private func windowThresholdRow(_ window: QuotaWarningWindow) -> some View {
@@ -315,7 +306,6 @@ private struct QuotaWarningThresholdField: View {
     @FocusState private var focusedField: QuotaWarningThresholdEditorText.Field?
 
     var body: some View {
-
         WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 7) {
                 self.horizontalEditor
@@ -344,9 +334,7 @@ private struct QuotaWarningThresholdField: View {
                 }
             }
             .background(self.focusMonitor)
-
         }
-
     }
 
     private var horizontalEditor: some View {

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Monterey does not provide SwiftUI's `ContentUnavailableView`.
+/// SDK 13.1-compatible unavailable-content presentation.
 struct CodexBarContentUnavailableView<LabelContent: View, DescriptionContent: View>: View {
     private let label: LabelContent
     private let description: DescriptionContent

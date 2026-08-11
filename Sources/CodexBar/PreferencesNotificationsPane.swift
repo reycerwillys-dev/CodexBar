@@ -1,12 +1,11 @@
-import SwiftUI
 import Perception
+import SwiftUI
 
 @MainActor
 struct NotificationsPane: View {
     @Perception.Bindable var settings: SettingsStore
 
     var body: some View {
-
         WithPerceptionTracking {
             Form {
                 Section {
@@ -60,8 +59,6 @@ struct NotificationsPane: View {
             .toggleStyle(.switch)
             .codexbarScrollContentBackgroundHidden()
             .background(FocusResigningBackground())
-
         }
-
     }
 }

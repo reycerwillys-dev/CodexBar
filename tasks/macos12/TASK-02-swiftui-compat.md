@@ -1,8 +1,8 @@
 ---
 id: MAC12-02
 title: SwiftUI Monterey 兼容层
-status: READY
-owner: unassigned
+status: REVIEW
+owner: agent-mac12-02
 depends_on: [MAC12-00]
 updated_at: 2026-08-12
 ---
@@ -43,12 +43,12 @@ updated_at: 2026-08-12
 
 ## 工作项
 
-- [ ] 审核 `LabeledContent`、`Grid`、`ContentUnavailableView` 回退。
-- [ ] 审核 `formStyle`、`scrollContentBackground`、`scrollIndicators` shim，禁止递归调用。
-- [ ] 审核 `ViewThatFits` Monterey 布局。
-- [ ] 对新拖放 API做 `#available` 隔离，确保按钮操作仍可完成同一任务。
-- [ ] 清理 `onChange` 双参数闭包，保持原语义。
-- [ ] 给 perceptible state 读取路径加 `WithPerceptionTracking`。
+- [x] 审核 `LabeledContent`、`Grid`、`ContentUnavailableView` 回退。
+- [x] 审核 `formStyle`、`scrollContentBackground`、`scrollIndicators` shim，禁止递归调用。
+- [x] 审核 `ViewThatFits` Monterey 布局。
+- [x] 对新拖放 API做 `#available` 隔离，确保按钮操作仍可完成同一任务。
+- [x] 清理 `onChange` 双参数闭包，保持原语义。
+- [x] 给 perceptible state 读取路径加 `WithPerceptionTracking`。
 - [ ] 在 12/13+ 截图对比关键设置页。
 
 ## 验收标准
@@ -60,6 +60,22 @@ updated_at: 2026-08-12
 
 ## Handoff
 
-- Commit SHA：待填写
-- 截图/验证：待填写
-- 剩余 UI 差异：待填写
+- Commit SHA：未提交（按 coordinator 要求）；基线 `98fc394935268dc4eabaeb5131c004d2eee972ad`。
+- 静态与 compile-only 证据：
+  - 本机 Apple Swift 5.7.2 + SDK 13.1 下以 `x86_64-apple-macosx12.0` 独立 typecheck 通过两个
+    兼容 helper、兼容调用点、单参数 `onChange`、`enumerated().element`、结构化 `ViewThatFits`
+    及受保护拖放探针。
+  - 源码扫描确认 lane 内没有 `Grid` / `GridRow`，没有双参数 `onChange`，没有 Observation-era wrapper；
+    `LabeledContent`、`ViewThatFits`、拖放和滚动/Form API 只留在结构化 availability 分支。
+  - 针对 coordinator 的 Swift 6.2.4 + SDK 13.1 组合复审后，已彻底移除 SDK 14 符号：空状态
+    统一使用项目 fallback，focus 兼容 modifier 统一 no-op，并依赖 `Button` 自带的键盘语义；
+    TASK-02 Swift 源码扫描结果为无编译器版本条件分支、无上述 SDK 14 符号调用。
+  - SwiftFormat 0.61.1 在协调器停止执行预编译工具的通知前完成：`0/24 files require formatting`。
+  - SwiftLint 0.65.0 无法在 macOS 12 启动：缺少 `/usr/lib/swift/libswift_StringProcessing.dylib`；
+    收到协调通知后未再执行 SwiftLint、SwiftFormat、`make check` 或任何 GUI probe。
+  - 全量 SwiftPM 构建未执行：本机 SwiftPM 5.7.1 无法解析仓库 `swift-tools-version: 6.2`；
+    未运行真实账号、Cookie、Keychain 或 provider probe。
+- 截图/验证：未勾选；未启动 CodexBar。macOS 12/13+ 截图与最终构建由 coordinator 统一执行。
+- 剩余 UI 差异/风险：Monterey 的 `ViewThatFits` 固定使用纵向布局；布局编辑器不启用拖放，改用
+  palette 追加、选中后移除及 preset 按钮。为兼容 Swift 6.2.4 + SDK 13.1，所有系统统一使用项目
+  空状态视图和默认 focus/按钮键盘行为；最终整包编译仍由 coordinator 执行。

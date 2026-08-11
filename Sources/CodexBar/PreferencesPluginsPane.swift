@@ -1,8 +1,8 @@
 #if canImport(JavaScriptCore)
 import AppKit
 import CodexBarCore
-import SwiftUI
 import Perception
+import SwiftUI
 import UniformTypeIdentifiers
 
 @MainActor
@@ -15,7 +15,6 @@ struct PluginsPane: View {
     @State private var operationError: String?
 
     var body: some View {
-
         WithPerceptionTracking {
             Form {
                 Section {
@@ -45,7 +44,8 @@ struct PluginsPane: View {
                     Text(L("Provider Plugins"))
                 } footer: {
                     SettingsSectionFooter(
-                        L("Plugins are local JavaScript or TypeScript files. Network and cookie access require approval."))
+                        L(
+                            "Plugins are local JavaScript or TypeScript files. Network and cookie access require approval."))
                 }
 
                 if self.results.isEmpty {
@@ -109,9 +109,7 @@ struct PluginsPane: View {
                     }),
                 actions: { Button(L("OK")) { self.operationError = nil } },
                 message: { Text(self.operationError ?? "") })
-
         }
-
     }
 
     private func pluginSection(_ plugin: UserProviderPlugin) -> some View {
@@ -356,7 +354,6 @@ private struct PluginApprovalSheet: View {
     }
 
     var body: some View {
-
         WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 14) {
                 Text(self.pending.sourceURL == nil ? L("Approve Plugin") : L("Install and Approve Plugin"))
@@ -404,9 +401,7 @@ private struct PluginApprovalSheet: View {
             }
             .padding(20)
             .frame(width: 520)
-
         }
-
     }
 
     private var canApprove: Bool {

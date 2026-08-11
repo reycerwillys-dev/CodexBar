@@ -1,5 +1,7 @@
 import SwiftUI
 
+// SwiftUI's @Entry macro is unavailable to the Monterey-compatible toolchain.
+// swiftformat:disable environmentEntry
 private struct MenuItemHighlightedKey: EnvironmentKey {
     static let defaultValue = false
 }

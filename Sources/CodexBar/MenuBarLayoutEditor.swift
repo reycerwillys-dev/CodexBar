@@ -1,8 +1,8 @@
 import AppKit
 import CodexBarCore
 import CoreTransferable
-import SwiftUI
 import Perception
+import SwiftUI
 import UniformTypeIdentifiers
 
 extension UTType {
@@ -47,9 +47,9 @@ extension MenuBarLayoutDragItem: Transferable {
     }
 }
 
-private extension View {
+extension View {
     @ViewBuilder
-    func codexbarDraggable(_ item: MenuBarLayoutDragItem) -> some View {
+    fileprivate func codexbarDraggable(_ item: MenuBarLayoutDragItem) -> some View {
         if #available(macOS 13, *) {
             self.draggable(item)
         } else {
@@ -58,7 +58,7 @@ private extension View {
     }
 
     @ViewBuilder
-    func codexbarDropDestination(
+    fileprivate func codexbarDropDestination(
         action: @escaping ([MenuBarLayoutDragItem], CGPoint) -> Bool) -> some View
     {
         if #available(macOS 13, *) {
@@ -297,13 +297,12 @@ struct MenuBarLayoutEditor: View {
     }
 
     var body: some View {
-
         WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 12) {
                 self.header
                 self.preview
                 self.layoutStrip
-                self.removeDropTarget
+                self.layoutRemovalControl
 
                 Divider()
 
@@ -322,9 +321,7 @@ struct MenuBarLayoutEditor: View {
             .onChange(of: self.scope) { _ in
                 self.selectedPosition = nil
             }
-
         }
-
     }
 
     private var header: some View {
@@ -483,6 +480,33 @@ struct MenuBarLayoutEditor: View {
         .accessibilityLabel(L("menu_bar_layout_line", lineIndex + 1))
     }
 
+    @ViewBuilder
+    private var layoutRemovalControl: some View {
+        if #available(macOS 13, *) {
+            self.removeDropTarget
+        } else {
+            Button {
+                self.removeSelectedToken()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "trash")
+                    Text(L("Remove"))
+                }
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(.secondary.opacity(0.06)))
+            .disabled(self.selectedPosition == nil)
+            .accessibilityLabel(L("Remove"))
+        }
+    }
+
     private var removeDropTarget: some View {
         HStack(spacing: 6) {
             Image(systemName: "trash")
@@ -616,7 +640,6 @@ private struct MenuBarLayoutChipLabel: View {
     let isSelected: Bool
 
     var body: some View {
-
         WithPerceptionTracking {
             HStack(spacing: 5) {
                 Image(systemName: self.systemImage)
@@ -634,9 +657,7 @@ private struct MenuBarLayoutChipLabel: View {
             .overlay(
                 Capsule(style: .continuous)
                     .stroke(self.isSelected ? Color.clear : Color.secondary.opacity(0.2), lineWidth: 1))
-
         }
-
     }
 }
 
@@ -650,7 +671,6 @@ struct MenuBarLayoutPreview: View {
     private let renderer = MenuBarLayoutRenderer()
 
     var body: some View {
-
         WithPerceptionTracking {
             let provider = self.provider ?? .codex
             let snapshot = self.store.snapshot(for: provider.instanceID)
@@ -670,9 +690,7 @@ struct MenuBarLayoutPreview: View {
                     isDebugApp: false,
                     now: minute))
             MenuBarLayoutPreviewText(rendered: rendered)
-
         }
-
     }
 
     func liveData(provider: UsageProvider, snapshot: UsageSnapshot) -> MenuBarLayoutRenderData {

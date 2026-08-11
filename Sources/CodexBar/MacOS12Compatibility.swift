@@ -15,17 +15,25 @@ struct CodexBarLabeledContent<LabelContent: View, Content: View>: View {
     }
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            self.label
-                .frame(maxWidth: .infinity, alignment: .leading)
-            self.content
-                .multilineTextAlignment(.trailing)
+        if #available(macOS 13, *) {
+            LabeledContent {
+                self.content
+            } label: {
+                self.label
+            }
+        } else {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                self.label
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                self.content
+                    .multilineTextAlignment(.trailing)
+            }
         }
     }
 }
 
 extension CodexBarLabeledContent where LabelContent == Text {
-    init<S>(_ title: S, @ViewBuilder content: () -> Content) where S: StringProtocol {
+    init(_ title: some StringProtocol, @ViewBuilder content: () -> Content) {
         self.init(content: content) {
             Text(title)
         }
@@ -33,9 +41,7 @@ extension CodexBarLabeledContent where LabelContent == Text {
 }
 
 extension CodexBarLabeledContent where LabelContent == Text, Content == Text {
-    init<S1, S2>(_ title: S1, value: S2)
-        where S1: StringProtocol, S2: StringProtocol
-    {
+    init(_ title: some StringProtocol, value: some StringProtocol) {
         self.init(content: { Text(value) }) {
             Text(title)
         }
@@ -43,6 +49,11 @@ extension CodexBarLabeledContent where LabelContent == Text, Content == Text {
 }
 
 extension View {
+    /// SDK 13.1 has no API for suppressing this effect. Keep normal button focus behavior.
+    func codexbarFocusEffectDisabled() -> some View {
+        self
+    }
+
     /// `scrollContentBackground` was added after Monterey. Keep the visual
     /// treatment on newer systems and make it a no-op on macOS 12.
     @ViewBuilder

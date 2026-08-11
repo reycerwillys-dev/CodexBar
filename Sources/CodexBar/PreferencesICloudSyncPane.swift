@@ -1,6 +1,6 @@
 import CodexBarCore
-import SwiftUI
 import Perception
+import SwiftUI
 
 @MainActor
 struct ICloudSyncPane: View {
@@ -11,7 +11,6 @@ struct ICloudSyncPane: View {
         "Hooks and machine-local paths never sync."
 
     var body: some View {
-
         WithPerceptionTracking {
             Form {
                 if self.state.status.needsAppUpdate {
@@ -81,9 +80,7 @@ struct ICloudSyncPane: View {
                 }
             }
             .codexbarGroupedFormStyle()
-
         }
-
     }
 
     private var syncCanBeEnabled: Bool {
@@ -155,7 +152,6 @@ private struct ICloudSyncDeviceRow: View {
     let isCurrentDevice: Bool
 
     var body: some View {
-
         WithPerceptionTracking {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -174,8 +170,6 @@ private struct ICloudSyncDeviceRow: View {
                         .background(.quaternary, in: Capsule())
                 }
             }
-
         }
-
     }
 }

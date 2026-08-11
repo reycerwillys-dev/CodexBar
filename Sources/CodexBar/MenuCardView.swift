@@ -621,8 +621,8 @@ private struct UsageNotesContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            ForEach(Array(self.notes.enumerated()), id: \.offset) { note in
-                Text(note)
+            ForEach(Array(self.notes.enumerated()), id: \.offset) { item in
+                Text(item.element)
                     .font(.footnote)
                     .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
                     .lineLimit(2)

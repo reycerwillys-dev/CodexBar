@@ -1,13 +1,12 @@
 import CodexBarCore
-import SwiftUI
 import Perception
+import SwiftUI
 
 @MainActor
 struct HooksPane: View {
     @Perception.Bindable var settings: SettingsStore
 
     var body: some View {
-
         WithPerceptionTracking {
             Form {
                 Section {
@@ -46,9 +45,7 @@ struct HooksPane: View {
                 }
             }
             .codexbarGroupedFormStyle()
-
         }
-
     }
 
     private var enabledBinding: Binding<Bool> {
@@ -77,7 +74,6 @@ private struct HookRuleRow: View {
     }
 
     var body: some View {
-
         WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
@@ -115,7 +111,10 @@ private struct HookRuleRow: View {
                     HStack {
                         Text(L("hooks_threshold"))
                             .foregroundStyle(.secondary)
-                        TextField(L("hooks_threshold_placeholder"), value: self.thresholdPercentBinding, format: .number)
+                        TextField(
+                            L("hooks_threshold_placeholder"),
+                            value: self.thresholdPercentBinding,
+                            format: .number)
                             .frame(width: 60)
                         Text(verbatim: "%")
                             .foregroundStyle(.secondary)
@@ -170,9 +169,7 @@ private struct HookRuleRow: View {
                     self.argumentRows = arguments.map(ArgumentRow.init(value:))
                 }
             }
-
         }
-
     }
 
     private var providerBinding: Binding<String?> {

@@ -1,6 +1,6 @@
 import CodexBarCore
-import SwiftUI
 import Perception
+import SwiftUI
 
 @MainActor
 struct MenuPane: View {
@@ -8,7 +8,6 @@ struct MenuPane: View {
     @Perception.Bindable var store: UsageStore
 
     var body: some View {
-
         WithPerceptionTracking {
             Form {
                 Section {
@@ -77,9 +76,7 @@ struct MenuPane: View {
             .toggleStyle(.switch)
             .codexbarScrollContentBackgroundHidden()
             .background(FocusResigningBackground())
-
         }
-
     }
 }
 
@@ -88,7 +85,6 @@ struct AgentSessionsSettingsSection: View {
     @Perception.Bindable var settings: SettingsStore
 
     var body: some View {
-
         WithPerceptionTracking {
             Section {
                 Toggle(isOn: self.$settings.agentSessionsEnabled) {
@@ -116,9 +112,7 @@ struct AgentSessionsSettingsSection: View {
             } footer: {
                 SettingsSectionFooter(L("agent_sessions_footer"))
             }
-
         }
-
     }
 }
 
@@ -129,7 +123,6 @@ struct AgentSessionHostsEditor: View {
     @Perception.Bindable var settings: SettingsStore
 
     var body: some View {
-
         WithPerceptionTracking {
             CodexBarLabeledContent(L("agent_sessions_hosts_title")) {
                 TextField(
@@ -143,9 +136,7 @@ struct AgentSessionHostsEditor: View {
             }
             .disabled(!self.settings.agentSessionsEnabled)
             .help(L("agent_sessions_footer"))
-
         }
-
     }
 }
 
@@ -156,7 +147,6 @@ struct CostSummarySettingsSection: View {
     @Perception.Bindable var store: UsageStore
 
     var body: some View {
-
         WithPerceptionTracking {
             Section {
                 SettingsMenuPicker(
@@ -193,9 +183,7 @@ struct CostSummarySettingsSection: View {
                     }
                 }
             }
-
         }
-
     }
 
     static func costDataExplanation() -> String {
@@ -260,7 +248,6 @@ struct CostHistoryDaysEditor: View {
     }
 
     var body: some View {
-
         WithPerceptionTracking {
             CodexBarLabeledContent(Self.title(days: self.settings.costUsageHistoryDays)) {
                 HStack(spacing: 8) {
@@ -280,8 +267,6 @@ struct CostHistoryDaysEditor: View {
                     .labelsHidden()
                 }
             }
-
         }
-
     }
 }

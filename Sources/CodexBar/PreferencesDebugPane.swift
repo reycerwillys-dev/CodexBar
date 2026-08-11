@@ -1,7 +1,7 @@
 import AppKit
 import CodexBarCore
-import SwiftUI
 import Perception
+import SwiftUI
 
 @MainActor
 struct DebugPane: View {
@@ -29,7 +29,6 @@ struct DebugPane: View {
     #endif
 
     var body: some View {
-
         WithPerceptionTracking {
             ScrollView(.vertical, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 20) {
@@ -354,7 +353,8 @@ struct DebugPane: View {
                         }
 
                         // Provider-specific by design: only Codex/Claude expose scanner-owned token errors here.
-                        let supportsTokenError = self.currentErrorProvider == .codex || self.currentErrorProvider == .claude
+                        let supportsTokenError = self.currentErrorProvider == .codex || self
+                            .currentErrorProvider == .claude
                         HStack(spacing: 12) {
                             Button {
                                 self.store._setTokenErrorForTesting(
@@ -425,9 +425,7 @@ struct DebugPane: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
             }
-
         }
-
     }
 
     private var fileLogPath: String {
