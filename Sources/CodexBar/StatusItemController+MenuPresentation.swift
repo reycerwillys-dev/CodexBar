@@ -839,7 +839,6 @@ struct MenuCardSectionContainerView<Content: View>: View {
     }
 
     var body: some View {
-
         WithPerceptionTracking {
             self.content()
                 .environment(\.menuItemHighlighted, self.highlightState.isHighlighted)
@@ -850,25 +849,27 @@ struct MenuCardSectionContainerView<Content: View>: View {
                 }
                 .foregroundStyle(MenuHighlightStyle.primary(self.highlightState.isHighlighted))
                 .background(alignment: .topLeading) {
-                    if self.highlightState.isHighlighted {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(MenuHighlightStyle.selectionBackground(true))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
+                    WithPerceptionTracking {
+                        if self.highlightState.isHighlighted {
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(MenuHighlightStyle.selectionBackground(true))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                        }
                     }
                 }
                 .overlay(alignment: self.submenuIndicatorAlignment) {
-                    if self.showsSubmenuIndicator {
-                        Image(systemName: "chevron.right")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(MenuHighlightStyle.secondary(self.highlightState.isHighlighted))
-                            .padding(.top, self.submenuIndicatorTopPadding)
-                            .padding(.trailing, 10)
+                    WithPerceptionTracking {
+                        if self.showsSubmenuIndicator {
+                            Image(systemName: "chevron.right")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(MenuHighlightStyle.secondary(self.highlightState.isHighlighted))
+                                .padding(.top, self.submenuIndicatorTopPadding)
+                                .padding(.trailing, 10)
+                        }
                     }
                 }
-
         }
-
     }
 }
 

@@ -764,7 +764,7 @@ final class SpendDashboardController {
         }
 
         var confirmedNonemptyInputs: [SpendDashboardModel.ProviderInput] {
-            self.observations.sorted { $0.key < $1.key }.compactMap { observation in
+            self.observations.sorted { $0.key < $1.key }.compactMap { _, observation in
                 guard case let .confirmedNonempty(input) = observation else { return nil }
                 return input
             }

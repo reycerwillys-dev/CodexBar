@@ -868,6 +868,29 @@ extension UsageStoreCoverageTests {
     }
 
     @Test
+    func `background work settings observation re-subscribes after every change`() async throws {
+        let settings = Self.makeSettingsStore(suite: "UsageStoreCoverageTests-observation-resubscribe")
+        settings.refreshFrequency = .manual
+        settings.statusChecksEnabled = false
+        let store = Self.makeUsageStore(settings: settings)
+        let provider = UsageProvider.codex.instanceID
+
+        store.probeLogs[provider] = "first change sentinel"
+        settings.statusChecksEnabled = true
+        for _ in 0..<20 where !store.probeLogs.isEmpty {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        #expect(store.probeLogs.isEmpty)
+
+        store.probeLogs[provider] = "second change sentinel"
+        settings.refreshFrequency = .oneMinute
+        for _ in 0..<20 where !store.probeLogs.isEmpty {
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
+        #expect(store.probeLogs.isEmpty)
+    }
+
+    @Test
     func `display only settings do not invoke provider refresh while background work is active`() async throws {
         let settings = Self.makeSettingsStore(suite: "UsageStoreCoverageTests-display-only-no-provider-refresh")
         settings.refreshFrequency = .manual
