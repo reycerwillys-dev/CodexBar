@@ -5,6 +5,9 @@ import CodexBarCore
 import SwiftUI
 
 @MainActor
+// The upstream chart view is intentionally kept in one type so its macOS 13 path and
+// Monterey fallback share the same data model.
+// swiftlint:disable:next type_body_length
 struct CostHistoryChartMenuView: View {
     #if canImport(Charts)
     @available(macOS 13, *)

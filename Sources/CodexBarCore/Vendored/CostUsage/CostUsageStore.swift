@@ -26,12 +26,15 @@ actor CostUsageStore {
             self.queue.setSpecific(key: Self.queueKey, value: ObjectIdentifier(self))
         }
 
-        func enqueue(_ job: consuming ExecutorJob) {
-            let unownedJob = UnownedJob(job)
+        func enqueue(_ job: UnownedJob) {
             let executor = self.asUnownedSerialExecutor()
             self.queue.async {
-                unownedJob.runSynchronously(on: executor)
+                job.runSynchronously(on: executor)
             }
+        }
+
+        func asUnownedSerialExecutor() -> UnownedSerialExecutor {
+            UnownedSerialExecutor(ordinary: self)
         }
 
         func checkIsolated() {

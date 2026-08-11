@@ -45,7 +45,8 @@ struct PluginsPane: View {
                 } footer: {
                     SettingsSectionFooter(
                         L(
-                            "Plugins are local JavaScript or TypeScript files. Network and cookie access require approval."))
+                            "Plugins are local JavaScript or TypeScript files. " +
+                                "Network and cookie access require approval."))
                 }
 
                 if self.results.isEmpty {

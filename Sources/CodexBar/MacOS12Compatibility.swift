@@ -34,17 +34,13 @@ struct CodexBarLabeledContent<LabelContent: View, Content: View>: View {
 
 extension CodexBarLabeledContent where LabelContent == Text {
     init(_ title: some StringProtocol, @ViewBuilder content: () -> Content) {
-        self.init(content: content) {
-            Text(title)
-        }
+        self.init(content: content, label: { Text(title) })
     }
 }
 
 extension CodexBarLabeledContent where LabelContent == Text, Content == Text {
     init(_ title: some StringProtocol, value: some StringProtocol) {
-        self.init(content: { Text(value) }) {
-            Text(title)
-        }
+        self.init(content: { Text(value) }, label: { Text(title) })
     }
 }
 

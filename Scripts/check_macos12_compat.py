@@ -42,6 +42,7 @@ SOURCE_PREFILTER_MARKERS = (
     "containerBackground",
     "onKeyPress",
     "OSAllocatedUnfairLock",
+    "ExecutorJob",
     "appending(path:",
     "append(path:",
     "filePath:",
@@ -98,6 +99,11 @@ FORBIDDEN_RULES = (
         "os-allocated-unfair-lock",
         re.compile(r"\bOSAllocatedUnfairLock\b|^\s*import\s+os[.]lock\b", re.MULTILINE),
         "use the Monterey-compatible StateLock instead of the macOS 13 lock API",
+    ),
+    Rule(
+        "modern-executor-job",
+        re.compile(r"\bExecutorJob\b"),
+        "implement SerialExecutor.enqueue with UnownedJob for the macOS 12 concurrency runtime",
     ),
     Rule(
         "modern-url-path-api",
@@ -513,6 +519,11 @@ def run_self_tests() -> None:
             "Monterey lock is required",
             "import os.lock\nlet lock = OSAllocatedUnfairLock(initialState: 0)",
             2,
+        ),
+        (
+            "Monterey executor job is required",
+            "func enqueue(_ job: consuming ExecutorJob) {}",
+            1,
         ),
     )
 
