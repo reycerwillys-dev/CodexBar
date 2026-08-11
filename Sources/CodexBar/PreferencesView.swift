@@ -1,7 +1,7 @@
 import AppKit
 import CodexBarCore
-import SwiftUI
 import Perception
+import SwiftUI
 
 /// Sidebar destinations of the settings window: fixed app panes plus one entry per provider.
 enum SettingsPane: Hashable {

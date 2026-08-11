@@ -612,7 +612,8 @@ extension StatusItemController: StatusItemMenuPersistentActionDelegate {
     }
 
     private func openSettings(pane: SettingsPane?) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
             if let pane {
                 self.preferencesSelection.pane = pane
             }

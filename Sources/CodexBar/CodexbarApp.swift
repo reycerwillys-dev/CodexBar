@@ -106,8 +106,8 @@ struct CodexBarApp: App {
     @SceneBuilder
     var body: some Scene {
         // Hidden 1×1 window to keep SwiftUI's lifecycle alive. Settings are hosted
-        // in an AppKit window so the app can run on Monterey, where SwiftUI's
-        // native `Settings` scene is not available.
+        // in AppKit so opening them does not depend on newer SwiftUI environment
+        // and window-management APIs that are unavailable on Monterey.
         WindowGroup("CodexBarLifecycleKeepalive") {
             HiddenWindowView()
         }
@@ -384,8 +384,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var managedCodexAccountCoordinator: ManagedCodexAccountCoordinator?
     private var codexAccountPromotionCoordinator: CodexAccountPromotionCoordinator?
     private var cloudSyncCoordinator: CloudSyncCoordinator?
+    private var settingsWindowController: CodexBarSettingsWindowController?
+    private var startupTask: Task<Void, Never>?
     private var hasInstalledLimitResetObservers = false
     private var settingsOpenObserver: NSObjectProtocol?
+    private var isTerminating = false
     #if DEBUG
     private var debugMemoryPressureObserver: NSObjectProtocol?
     #endif
@@ -401,18 +404,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.managedCodexAccountCoordinator = dependencies.managedCodexAccountCoordinator
         self.codexAccountPromotionCoordinator = dependencies.codexAccountPromotionCoordinator
         self.cloudSyncCoordinator = CloudSyncCoordinator(settings: dependencies.settings, state: self.cloudSyncState)
-        if self.settingsOpenObserver == nil {
-            self.settingsOpenObserver = NotificationCenter.default.addObserver(
-                forName: .codexbarOpenSettings,
-                object: nil,
-                queue: .main)
-            { [weak self] notification in
-                guard let request = notification.object as? SettingsOpenRequest else { return }
-                MainActor.assumeIsolated {
-                    request.wasHandled = self?.showSettingsWindow() ?? false
-                }
+        self.installSettingsOpenObserverIfNeeded()
+    }
+
+    private func installSettingsOpenObserverIfNeeded() {
+        guard self.settingsOpenObserver == nil, !self.isTerminating else { return }
+        self.settingsOpenObserver = NotificationCenter.default.addObserver(
+            forName: .codexbarOpenSettings,
+            object: nil,
+            queue: .main)
+        { [weak self] notification in
+            guard let request = notification.object as? SettingsOpenRequest else { return }
+            MainActor.assumeIsolated {
+                request.wasHandled = self?.showSettingsWindow() ?? false
             }
         }
+    }
+
+    private func removeSettingsOpenObserver() {
+        guard let settingsOpenObserver = self.settingsOpenObserver else { return }
+        NotificationCenter.default.removeObserver(settingsOpenObserver)
+        self.settingsOpenObserver = nil
     }
 
     func applicationWillFinishLaunching(_ notification: Notification) {
@@ -427,18 +439,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #endif
         self.ensureStatusController()
         self.cloudSyncCoordinator?.start()
-        Task { @MainActor [weak self] in
-            await Task.yield()
-            guard let settings = self?.settings else { return }
-            AdaptiveActivityConsentPresenter.presentIfNeeded(settings: settings)
-            AppNotifications.shared.requestAuthorizationOnStartup()
-            // A persisted non-USD choice opts into the daily exchange-rate refresh. The service
-            // returns before networking for the default USD setting and Auto.
-            guard CurrencyExchange.requiresLiveRates(
-                preferredCurrencyCode: settings.preferredCurrencyCode)
-            else { return }
-            await CurrencyExchange.shared.fetchLatestRatesIfNeeded(
-                preferredCurrencyCode: settings.preferredCurrencyCode)
+        if self.startupTask == nil {
+            self.startupTask = Task { @MainActor [weak self] in
+                await Task.yield()
+                guard !Task.isCancelled, let settings = self?.settings else { return }
+                AdaptiveActivityConsentPresenter.presentIfNeeded(settings: settings)
+                guard !Task.isCancelled else { return }
+                AppNotifications.shared.requestAuthorizationOnStartup()
+                // A persisted non-USD choice opts into the daily exchange-rate refresh. The service
+                // returns before networking for the default USD setting and Auto.
+                guard !Task.isCancelled,
+                      CurrencyExchange.requiresLiveRates(
+                          preferredCurrencyCode: settings.preferredCurrencyCode)
+                else { return }
+                await CurrencyExchange.shared.fetchLatestRatesIfNeeded(
+                    preferredCurrencyCode: settings.preferredCurrencyCode)
+            }
         }
         KeyboardShortcuts.onKeyUp(for: .openMenu) { [weak self] in
             // KeyboardShortcuts dispatches both normal and menu-tracking hotkeys on the main event loop.
@@ -462,10 +478,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        if let settingsOpenObserver = self.settingsOpenObserver {
-            NotificationCenter.default.removeObserver(settingsOpenObserver)
-            self.settingsOpenObserver = nil
-        }
+        self.isTerminating = true
+        self.startupTask?.cancel()
+        self.startupTask = nil
+        self.removeSettingsOpenObserver()
+        self.removeLimitResetObservers()
         self.cloudSyncCoordinator?.stop()
         self.memoryPressureMonitor.stop()
         #if DEBUG
@@ -473,15 +490,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #endif
         self.statusController?.prepareForAppShutdown()
         self.confettiOverlayController.dismiss()
+        self.settingsWindowController?.prepareForApplicationTermination()
+        self.settingsWindowController = nil
         self.dismissAppKitWindowsForShutdown()
         self.terminateActiveProcessesForAppShutdown()
     }
 
-    private var settingsWindowController: CodexBarSettingsWindowController?
-
     @discardableResult
     private func showSettingsWindow() -> Bool {
-        guard let store = self.store,
+        guard !self.isTerminating,
+              let store = self.store,
               let settings = self.settings,
               let selection = self.preferencesSelection,
               let managedCodexAccountCoordinator = self.managedCodexAccountCoordinator,
@@ -490,8 +508,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return false
         }
 
-        if self.settingsWindowController == nil {
-            self.settingsWindowController = CodexBarSettingsWindowController(
+        let settingsWindowController: CodexBarSettingsWindowController
+        if let existingController = self.settingsWindowController {
+            settingsWindowController = existingController
+        } else {
+            let newController = CodexBarSettingsWindowController(
                 settings: settings,
                 store: store,
                 cloudSyncState: self.cloudSyncState,
@@ -502,11 +523,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 runProviderLoginFlow: { [weak self] provider in
                     await self?.runProviderLoginFlow(provider)
                 })
+            self.settingsWindowController = newController
+            settingsWindowController = newController
         }
-        self.settingsWindowController?.showWindow(nil)
-        self.settingsWindowController?.window?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-        return self.settingsWindowController?.window != nil
+        settingsWindowController.showWindow(nil)
+        return settingsWindowController.window != nil
+    }
+
+    /// Legacy AppKit responder-chain action used when the notification relay is unavailable.
+    @objc func showPreferencesWindow(_ sender: Any?) {
+        _ = sender
+        self.showSettingsWindow()
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
@@ -585,6 +612,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for window in app.windows {
             window.orderOut(nil)
         }
+    }
+
+    private func removeLimitResetObservers() {
+        guard self.hasInstalledLimitResetObservers else { return }
+        let center = NotificationCenter.default
+        center.removeObserver(self, name: .codexbarSessionLimitReset, object: nil)
+        center.removeObserver(self, name: .codexbarWeeklyLimitReset, object: nil)
+        self.hasInstalledLimitResetObservers = false
     }
 
     private func ensureStatusController() {
@@ -691,6 +726,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     #endif
 
     deinit {
+        if let settingsOpenObserver {
+            NotificationCenter.default.removeObserver(settingsOpenObserver)
+        }
         NotificationCenter.default.removeObserver(self)
     }
 }

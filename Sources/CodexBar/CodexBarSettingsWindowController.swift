@@ -4,11 +4,12 @@ import SwiftUI
 
 /// AppKit-hosted settings window used on every supported OS.
 ///
-/// SwiftUI's native `Settings` scene was introduced after Monterey. Hosting the
-/// existing settings view ourselves keeps the same UI and routing while allowing
-/// the menu-bar app to launch on macOS 12.
+/// Hosting the existing settings view ourselves keeps the same UI and routing
+/// without relying on newer SwiftUI settings-opening and window-management APIs.
 @MainActor
 final class CodexBarSettingsWindowController: NSWindowController {
+    private static let frameAutosaveName = "CodexBarSettingsWindowFrame"
+
     init(
         settings: SettingsStore,
         store: UsageStore,
@@ -32,13 +33,21 @@ final class CodexBarSettingsWindowController: NSWindowController {
         let window = NSWindow(contentViewController: hostingController)
         super.init(window: window)
 
-        window.title = "CodexBar Settings"
+        window.identifier = NSUserInterfaceItemIdentifier("CodexBarSettingsWindow")
+        window.title = selection.pane.title
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
         window.isReleasedWhenClosed = false
+        window.isRestorable = false
+        window.tabbingMode = .disallowed
+        window.collectionBehavior.insert(.moveToActiveSpace)
         window.setContentSize(NSSize(width: SettingsPane.windowWidth, height: SettingsPane.windowHeight))
-        window.minSize = NSSize(width: SettingsPane.windowMinWidth, height: SettingsPane.windowMinHeight)
-        window.center()
+        if !window.setFrameUsingName(Self.frameAutosaveName) {
+            window.center()
+        }
+        _ = window.setFrameAutosaveName(Self.frameAutosaveName)
+        SettingsWindowSizing.enforceMinimumSize(window)
         SettingsWindowAppearance.refresh(window)
+        DockIconController.shared.registerSettingsWindow(window)
     }
 
     @available(*, unavailable)
@@ -47,12 +56,22 @@ final class CodexBarSettingsWindowController: NSWindowController {
     }
 
     override func showWindow(_ sender: Any?) {
-        super.showWindow(sender)
-        self.window?.makeKeyAndOrderFront(sender)
-        self.window?.orderFrontRegardless()
-        NSApp.activate(ignoringOtherApps: true)
-        if let window = self.window {
-            SettingsWindowSizing.enforceMinimumSize(window)
+        guard let window = self.window else { return }
+        DockIconController.shared.registerSettingsWindow(window)
+        DockIconController.shared.promote()
+        if window.isMiniaturized {
+            window.deminiaturize(sender)
         }
+        SettingsWindowSizing.enforceMinimumSize(window)
+        SettingsWindowAppearance.refresh(window)
+        super.showWindow(sender)
+        window.makeKeyAndOrderFront(sender)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func prepareForApplicationTermination() {
+        self.window?.orderOut(nil)
+        self.close()
+        self.window = nil
     }
 }

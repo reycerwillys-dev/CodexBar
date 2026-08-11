@@ -38,7 +38,7 @@ struct SettingsWindowOpener {
             },
             appKit: {
                 DockIconController.shared.promote()
-                return NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+                return NSApp.sendAction(#selector(AppDelegate.showPreferencesWindow(_:)), to: nil, from: nil)
             })
     }
 

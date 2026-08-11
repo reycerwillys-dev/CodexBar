@@ -1,7 +1,7 @@
 import AppKit
 import CodexBarCore
-import SwiftUI
 import Perception
+import SwiftUI
 
 /// System Settings-style sidebar: fixed app panes on top, one row per provider below.
 @MainActor
