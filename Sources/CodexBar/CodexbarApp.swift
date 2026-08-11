@@ -387,7 +387,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindowController: CodexBarSettingsWindowController?
     private var startupTask: Task<Void, Never>?
     private var hasInstalledLimitResetObservers = false
-    private var settingsOpenObserver: NSObjectProtocol?
+    private var hasInstalledSettingsOpenObserver = false
     private var isTerminating = false
     #if DEBUG
     private var debugMemoryPressureObserver: NSObjectProtocol?
@@ -408,23 +408,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func installSettingsOpenObserverIfNeeded() {
-        guard self.settingsOpenObserver == nil, !self.isTerminating else { return }
-        self.settingsOpenObserver = NotificationCenter.default.addObserver(
-            forName: .codexbarOpenSettings,
-            object: nil,
-            queue: .main)
-        { [weak self] notification in
-            guard let request = notification.object as? SettingsOpenRequest else { return }
-            MainActor.assumeIsolated {
-                request.wasHandled = self?.showSettingsWindow() ?? false
-            }
-        }
+        guard !self.hasInstalledSettingsOpenObserver, !self.isTerminating else { return }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(self.handleSettingsOpenNotification(_:)),
+            name: .codexbarOpenSettings,
+            object: nil)
+        self.hasInstalledSettingsOpenObserver = true
+    }
+
+    @objc private func handleSettingsOpenNotification(_ notification: Notification) {
+        guard let request = notification.object as? SettingsOpenRequest else { return }
+        request.wasHandled = self.showSettingsWindow()
     }
 
     private func removeSettingsOpenObserver() {
-        guard let settingsOpenObserver = self.settingsOpenObserver else { return }
-        NotificationCenter.default.removeObserver(settingsOpenObserver)
-        self.settingsOpenObserver = nil
+        guard self.hasInstalledSettingsOpenObserver else { return }
+        NotificationCenter.default.removeObserver(self, name: .codexbarOpenSettings, object: nil)
+        self.hasInstalledSettingsOpenObserver = false
     }
 
     func applicationWillFinishLaunching(_ notification: Notification) {
@@ -726,9 +727,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     #endif
 
     deinit {
-        if let settingsOpenObserver {
-            NotificationCenter.default.removeObserver(settingsOpenObserver)
-        }
         NotificationCenter.default.removeObserver(self)
     }
 }
