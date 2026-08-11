@@ -212,6 +212,13 @@ jobs:
             printf '```\n'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Capture resolved dependency graph
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/macos12-logs"
+          cp Package.resolved "$RUNNER_TEMP/macos12-logs/Package.resolved"
+
       - name: Upload artifact and logs
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
