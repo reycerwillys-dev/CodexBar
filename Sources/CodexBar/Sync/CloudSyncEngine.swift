@@ -139,6 +139,8 @@ enum CloudSyncEntitlementGate {
     }
 }
 
+// The sync engine deliberately keeps all CKSyncEngine availability boundaries in one actor.
+// swiftlint:disable:next type_body_length
 actor CloudSyncEngine {
     static let containerIdentifier = "iCloud.com.steipete.codexbar"
     static let zoneID = CKRecordZone.ID(zoneName: "CodexBarSync", ownerName: CKCurrentUserDefaultName)
