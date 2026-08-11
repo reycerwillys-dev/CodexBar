@@ -1,0 +1,158 @@
+name: macOS 12 Intel Compatibility
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "Package.swift"
+      - "Package.resolved"
+      - "Sources/**"
+      - "Tests/**"
+      - "WidgetExtension/**"
+      - "Scripts/*macos12*"
+      - "Scripts/*MacOS12*"
+      - ".github/workflows/*macos12*"
+  push:
+    branches: [compat/macos-12]
+
+concurrency:
+  group: macos12-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  static-compatibility:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Validate automation syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n Scripts/build_macos12_x86_64.sh
+          python3 -m py_compile Scripts/check_macos12_compat.py
+
+      - name: Self-test compatibility scanner
+        run: ./Scripts/check_macos12_compat.py --self-test
+
+      - name: Scan macOS 12 compatibility boundaries
+        run: ./Scripts/check_macos12_compat.py
+
+  intel-compile-and-package:
+    needs: static-compatibility
+    # Match the Intel runner already exercised by release-cli.yml.
+    runs-on: macos-15-intel
+    timeout-minutes: 120
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "12.0"
+      CODEXBAR_ALLOW_TEST_KEYCHAIN_ACCESS: "0"
+      CODEXBAR_ALLOW_TEST_BROWSER_COOKIE_ACCESS: "0"
+      CODEXBAR_DISABLE_KEYCHAIN_ACCESS: "1"
+      CODEXBAR_SUPPRESS_TEST_KEYCHAIN_ACCESS: "1"
+      LIVE_TEST: "0"
+      QWEN_CLOUD_LIVE_TEST: "0"
+      LIVE_CLAUDE_KEYCHAIN_PROOF: "0"
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Select Xcode 26.3 or 26.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          selected=""
+          for candidate in /Applications/Xcode_26.3.app /Applications/Xcode_26.2.app; do
+            if [[ -d "$candidate" ]]; then
+              selected="${candidate}/Contents/Developer"
+              break
+            fi
+          done
+          if [[ -z "$selected" ]]; then
+            echo "Neither Xcode 26.3 nor 26.2 is installed on this runner." >&2
+            exit 1
+          fi
+          echo "DEVELOPER_DIR=$selected" >> "$GITHUB_ENV"
+          echo "Selected DEVELOPER_DIR=$selected"
+          DEVELOPER_DIR="$selected" xcodebuild -version
+          DEVELOPER_DIR="$selected" xcrun swift --version
+          DEVELOPER_DIR="$selected" xcrun --sdk macosx --show-sdk-version
+
+      - name: Record and validate runner toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$(uname -m)" == "x86_64" ]]
+          uname -a
+          sw_vers
+          xcodebuild -version
+          swift --version
+          swift package --version
+          xcrun --sdk macosx --show-sdk-path
+          xcrun --sdk macosx --show-sdk-version
+
+      - name: Restore SwiftPM cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .build
+            ~/Library/Caches/org.swift.swiftpm
+          key: macos12-intel-swiftpm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            macos12-intel-swiftpm-
+
+      - name: Run automation self-tests and compatibility scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/macos12-logs"
+          ./Scripts/build_macos12_x86_64.sh --self-test 2>&1 | tee "$RUNNER_TEMP/macos12-logs/automation-self-test.log"
+          ./Scripts/check_macos12_compat.py --self-test 2>&1 | tee "$RUNNER_TEMP/macos12-logs/scanner-self-test.log"
+          ./Scripts/check_macos12_compat.py 2>&1 | tee "$RUNNER_TEMP/macos12-logs/compatibility-scan.log"
+
+      - name: Compile source and test targets without executing tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          swift build \
+            --configuration debug \
+            --arch x86_64 \
+            --build-tests \
+            --build-path .build/macos12-tests \
+            2>&1 | tee "$RUNNER_TEMP/macos12-logs/compile-tests.log"
+
+      - name: Build and verify Intel macOS 12 app
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./Scripts/build_macos12_x86_64.sh \
+            --configuration release \
+            --package-app \
+            --output-dir "$RUNNER_TEMP/macos12-artifacts" \
+            2>&1 | tee "$RUNNER_TEMP/macos12-logs/release-build.log"
+
+      - name: Summarize verified artifact
+        if: ${{ success() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          metadata="$RUNNER_TEMP/macos12-artifacts/CodexBar-macos12-x86_64-release-build.txt"
+          {
+            printf '### macOS 12 Intel compatibility artifact\n\n'
+            printf '```text\n'
+            cat "$metadata"
+            printf '```\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifact and logs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: CodexBar-macos12-x86_64-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            ${{ runner.temp }}/macos12-artifacts/**
+            ${{ runner.temp }}/macos12-logs/**
