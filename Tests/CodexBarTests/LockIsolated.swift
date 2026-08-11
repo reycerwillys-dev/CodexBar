@@ -16,6 +16,10 @@ final class LockIsolated<Value>: @unchecked Sendable {
         self.storage = value
     }
 
+    convenience init(initialState: Value) {
+        self.init(initialState)
+    }
+
     var value: Value {
         self.lock.lock()
         defer { self.lock.unlock() }
@@ -26,5 +30,11 @@ final class LockIsolated<Value>: @unchecked Sendable {
         self.lock.lock()
         defer { self.lock.unlock() }
         self.storage = value
+    }
+
+    func withLock<Result>(_ body: (inout Value) throws -> Result) rethrows -> Result {
+        self.lock.lock()
+        defer { self.lock.unlock() }
+        return try body(&self.storage)
     }
 }

@@ -18,10 +18,10 @@ enum FakeExecutable {
     }
 
     private static func trampoline() throws -> URL {
-        var directory = URL(filePath: #filePath).deletingLastPathComponent()
+        var directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         for _ in 0..<12 {
-            let candidate = directory.appending(path: "Tests/CodexBarTests/Fixtures/Scripts/exec-trampoline.sh")
-            if FileManager.default.fileExists(atPath: candidate.path(percentEncoded: false)) {
+            let candidate = directory.appendingPathComponent("Tests/CodexBarTests/Fixtures/Scripts/exec-trampoline.sh")
+            if FileManager.default.fileExists(atPath: candidate.path) {
                 return candidate
             }
             directory.deleteLastPathComponent()

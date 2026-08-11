@@ -1,5 +1,26 @@
 import Foundation
 
+package struct AdaptiveRefreshDuration: Sendable, Equatable, Comparable {
+    package struct Components: Sendable, Equatable {
+        package let seconds: Int64
+        package let attoseconds: Int64
+    }
+
+    private let secondsValue: Int64
+
+    package static func seconds(_ seconds: Int) -> AdaptiveRefreshDuration {
+        AdaptiveRefreshDuration(secondsValue: Int64(seconds))
+    }
+
+    package var components: Components {
+        Components(seconds: self.secondsValue, attoseconds: 0)
+    }
+
+    package static func < (lhs: AdaptiveRefreshDuration, rhs: AdaptiveRefreshDuration) -> Bool {
+        lhs.secondsValue < rhs.secondsValue
+    }
+}
+
 /// Canonical adaptive-refresh decision table shared by the app and offline replay tooling.
 /// Platform adapters normalize their thermal signals before calling this type; thresholds and
 /// delays live here only.
@@ -41,10 +62,10 @@ package struct AdaptiveRefreshPolicyCore: Sendable {
     }
 
     package struct Decision: Sendable, Equatable {
-        package let delay: Duration
+        package let delay: AdaptiveRefreshDuration
         package let reason: Reason
 
-        fileprivate init(delay: Duration, reason: Reason) {
+        fileprivate init(delay: AdaptiveRefreshDuration, reason: Reason) {
             self.delay = delay
             self.reason = reason
         }
@@ -55,12 +76,12 @@ package struct AdaptiveRefreshPolicyCore: Sendable {
     private static let idleThreshold: TimeInterval = 4 * 60 * 60
     private static let codingActivityThreshold: TimeInterval = 5 * 60
 
-    private static let recentInteractionDelay: Duration = .seconds(2 * 60)
-    private static let warmDelay: Duration = .seconds(5 * 60)
-    private static let idleDelay: Duration = .seconds(15 * 60)
-    private static let longIdleDelay: Duration = .seconds(30 * 60)
-    private static let constrainedDelay: Duration = .seconds(30 * 60)
-    private static let codingActivityDelayCap: Duration = .seconds(5 * 60)
+    private static let recentInteractionDelay: AdaptiveRefreshDuration = .seconds(2 * 60)
+    private static let warmDelay: AdaptiveRefreshDuration = .seconds(5 * 60)
+    private static let idleDelay: AdaptiveRefreshDuration = .seconds(15 * 60)
+    private static let longIdleDelay: AdaptiveRefreshDuration = .seconds(30 * 60)
+    private static let constrainedDelay: AdaptiveRefreshDuration = .seconds(30 * 60)
+    private static let codingActivityDelayCap: AdaptiveRefreshDuration = .seconds(5 * 60)
 
     /// Representative cadence for consumers that need one interval but cannot access live state.
     package static let nominalIntervalForHeuristics: TimeInterval = 5 * 60

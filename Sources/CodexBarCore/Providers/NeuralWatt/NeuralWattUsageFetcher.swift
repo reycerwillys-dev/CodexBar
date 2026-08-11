@@ -463,9 +463,9 @@ public struct NeuralWattUsageFetcher: Sendable {
         var url = baseURL
         let pathComponents = url.path.split(separator: "/")
         if pathComponents.last == "v1" {
-            url.append(path: "quota")
+            url.appendPathComponent("quota")
         } else {
-            url.append(path: "v1/quota")
+            url.appendPathComponent("v1/quota")
         }
         return url
     }

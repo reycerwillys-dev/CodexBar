@@ -66,6 +66,23 @@ public enum TextParsing {
         return String(text[r])
     }
 
+    /// Returns the capture groups for every regex match, excluding the full-match range.
+    public static func captureGroups(
+        pattern: String,
+        text: String,
+        options: NSRegularExpression.Options = []) -> [[String]]
+    {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: options) else { return [] }
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        return regex.matches(in: text, options: [], range: range).map { match in
+            guard match.numberOfRanges > 1 else { return [] }
+            return (1..<match.numberOfRanges).compactMap { index in
+                guard let captureRange = Range(match.range(at: index), in: text) else { return nil }
+                return String(text[captureRange])
+            }
+        }
+    }
+
     public static func percentLeft(fromLine line: String) -> Int? {
         guard let pct = firstInt(pattern: #"([0-9]{1,3})%\s+left"#, text: line) else { return nil }
         return pct

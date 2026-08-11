@@ -203,7 +203,7 @@ struct SakanaUsageFetcherTests {
         let transport = try SakanaScriptedTransport(
             statusCode: 200,
             body: Self.billingHTML,
-            responseURL: #require(URL(string: "https://auth.sakana.ai")?.appending(path: "login")))
+            responseURL: #require(URL(string: "https://auth.sakana.ai")?.appendingPathComponent("login")))
 
         await #expect(throws: SakanaUsageError.loginRequired) {
             _ = try await SakanaUsageFetcher.fetchUsage(

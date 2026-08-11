@@ -9,9 +9,9 @@ struct ProviderIconResourcesTests {
     @Test
     func `groq and grok provider icons are distinct`() throws {
         let root = try Self.repoRoot()
-        let resources = root.appending(path: "Sources/CodexBar/Resources", directoryHint: .isDirectory)
-        let groq = try String(contentsOf: resources.appending(path: "ProviderIcon-groq.svg"), encoding: .utf8)
-        let grok = try String(contentsOf: resources.appending(path: "ProviderIcon-grok.svg"), encoding: .utf8)
+        let resources = root.appendingPathComponent("Sources/CodexBar/Resources", isDirectory: true)
+        let groq = try String(contentsOf: resources.appendingPathComponent("ProviderIcon-groq.svg"), encoding: .utf8)
+        let grok = try String(contentsOf: resources.appendingPathComponent("ProviderIcon-grok.svg"), encoding: .utf8)
 
         #expect(groq != grok)
     }
@@ -19,9 +19,9 @@ struct ProviderIconResourcesTests {
     @Test
     func `grok and xai provider icons are distinct`() throws {
         let root = try Self.repoRoot()
-        let resources = root.appending(path: "Sources/CodexBar/Resources", directoryHint: .isDirectory)
-        let grok = try String(contentsOf: resources.appending(path: "ProviderIcon-grok.svg"), encoding: .utf8)
-        let xai = try String(contentsOf: resources.appending(path: "ProviderIcon-xai.svg"), encoding: .utf8)
+        let resources = root.appendingPathComponent("Sources/CodexBar/Resources", isDirectory: true)
+        let grok = try String(contentsOf: resources.appendingPathComponent("ProviderIcon-grok.svg"), encoding: .utf8)
+        let xai = try String(contentsOf: resources.appendingPathComponent("ProviderIcon-xai.svg"), encoding: .utf8)
 
         #expect(grok != xai)
     }
@@ -93,10 +93,10 @@ struct ProviderIconResourcesTests {
     }
 
     private static func repoRoot() throws -> URL {
-        var dir = URL(filePath: #filePath).deletingLastPathComponent()
+        var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         for _ in 0..<12 {
-            let candidate = dir.appending(path: "Package.swift")
-            if FileManager.default.fileExists(atPath: candidate.path(percentEncoded: false)) {
+            let candidate = dir.appendingPathComponent("Package.swift")
+            if FileManager.default.fileExists(atPath: candidate.path) {
                 return dir
             }
             dir.deleteLastPathComponent()

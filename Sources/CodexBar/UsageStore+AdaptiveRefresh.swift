@@ -1,3 +1,4 @@
+import CodexBarCore
 import Foundation
 
 /// Wiring around `AdaptiveRefreshPolicy` for `UsageStore.startTimer()`: gathering live signals,

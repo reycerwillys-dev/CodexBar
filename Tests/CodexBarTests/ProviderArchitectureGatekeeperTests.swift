@@ -94,13 +94,13 @@ struct ProviderArchitectureGatekeeperTests {
     @Test
     func `every provider descriptor has a loadable SVG resource`() throws {
         let resources = try Self.repoRoot()
-            .appending(path: "Sources/CodexBar/Resources", directoryHint: .isDirectory)
+            .appendingPathComponent("Sources/CodexBar/Resources", isDirectory: true)
 
         for descriptor in ProviderDescriptorRegistry.all {
             let resourceName = descriptor.branding.iconResourceName
-            let url = resources.appending(path: "\(resourceName).svg")
+            let url = resources.appendingPathComponent("\(resourceName).svg")
             #expect(
-                FileManager.default.fileExists(atPath: url.path(percentEncoded: false)),
+                FileManager.default.fileExists(atPath: url.path),
                 "Missing SVG for \(descriptor.id.rawValue): \(resourceName).svg")
             #expect(NSImage(contentsOf: url) != nil, "Could not load \(resourceName).svg as NSImage")
         }
@@ -3714,8 +3714,8 @@ struct ProviderArchitectureGatekeeperTests {
     private static func shippedSwiftSources(root: URL) throws -> [SourceFile] {
         var files: [SourceFile] = []
         for directoryName in ["Sources", "WidgetExtension"] {
-            let directory = root.appending(path: directoryName, directoryHint: .isDirectory)
-            guard FileManager.default.fileExists(atPath: directory.path(percentEncoded: false)) else { continue }
+            let directory = root.appendingPathComponent(directoryName, isDirectory: true)
+            guard FileManager.default.fileExists(atPath: directory.path) else { continue }
             let enumerator = try #require(FileManager.default.enumerator(
                 at: directory,
                 includingPropertiesForKeys: [.isRegularFileKey],
@@ -4411,10 +4411,10 @@ struct ProviderArchitectureGatekeeperTests {
     }
 
     private static func repoRoot() throws -> URL {
-        var directory = URL(filePath: #filePath).deletingLastPathComponent()
+        var directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         for _ in 0..<12 {
             if FileManager.default.fileExists(
-                atPath: directory.appending(path: "Package.swift").path(percentEncoded: false))
+                atPath: directory.appendingPathComponent("Package.swift").path)
             {
                 return directory
             }

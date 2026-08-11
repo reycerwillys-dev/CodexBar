@@ -10,6 +10,13 @@ struct TextParsingTests {
     }
 
     @Test
+    func `capture groups return every match without the full range`() {
+        let groups = TextParsing.captureGroups(pattern: #"(\d+)([dhms])"#, text: "1d 2h 30m")
+
+        #expect(groups == [["1", "d"], ["2", "h"], ["30", "m"]])
+    }
+
+    @Test
     func `first number parses decimal separators`() {
         let dotDecimal = TextParsing.firstNumber(pattern: #"Credits:\s*([0-9][0-9., ]*)"#, text: "Credits: 54.72")
         #expect(dotDecimal == 54.72)

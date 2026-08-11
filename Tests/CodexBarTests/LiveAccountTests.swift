@@ -17,7 +17,8 @@ struct LiveAccountTests {
         }
 
         let pattern = #"^[^\s@]+@[^\s@]+\.[^\s@]+$"#
-        let regex = try Regex(pattern)
-        #expect(email.contains(regex), "Email did not match pattern: \(email)")
+        let regex = try NSRegularExpression(pattern: pattern)
+        let range = NSRange(email.startIndex..<email.endIndex, in: email)
+        #expect(regex.firstMatch(in: email, range: range) != nil, "Email did not match pattern: \(email)")
     }
 }

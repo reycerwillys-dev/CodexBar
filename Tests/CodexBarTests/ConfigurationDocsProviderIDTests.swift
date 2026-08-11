@@ -6,7 +6,7 @@ struct ConfigurationDocsProviderIDTests {
     @Test
     func `generated docs list every provider id in enum order`() throws {
         let rootURL = try Self.repoRoot()
-        let docsURL = rootURL.appending(path: "docs/provider-ids.md")
+        let docsURL = rootURL.appendingPathComponent("docs/provider-ids.md")
         let docs = try String(contentsOf: docsURL, encoding: .utf8)
 
         let marker = "# Provider IDs"
@@ -23,10 +23,10 @@ struct ConfigurationDocsProviderIDTests {
     }
 
     private static func repoRoot() throws -> URL {
-        var directory = URL(filePath: #filePath).deletingLastPathComponent()
+        var directory = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         for _ in 0..<12 {
-            let packageManifest = directory.appending(path: "Package.swift")
-            if FileManager.default.fileExists(atPath: packageManifest.path(percentEncoded: false)) {
+            let packageManifest = directory.appendingPathComponent("Package.swift")
+            if FileManager.default.fileExists(atPath: packageManifest.path) {
                 return directory
             }
             directory.deleteLastPathComponent()

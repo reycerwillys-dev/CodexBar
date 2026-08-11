@@ -80,12 +80,12 @@ struct ProviderEndpointOverrideValidator {
         guard let url else { return nil }
         guard let scheme = url.scheme?.lowercased(), scheme == "https" else { return nil }
         guard url.user == nil, url.password == nil else { return nil }
-        guard let decodedHost = url.host(percentEncoded: false)?.lowercased(),
+        guard let decodedHost = url.host?.lowercased(),
               !decodedHost.isEmpty,
               !decodedHost.contains("%"),
               decodedHost.rangeOfCharacter(from: .whitespacesAndNewlines) == nil,
               decodedHost.rangeOfCharacter(from: .controlCharacters) == nil,
-              let encodedHost = url.host(percentEncoded: true)?.lowercased(),
+              let encodedHost = Self.encodedHost(for: url)?.lowercased(),
               Self.hostHasNoEncodedDelimiters(encodedHost, decodedHost: decodedHost, url: url)
         else { return nil }
         return url
@@ -213,12 +213,12 @@ struct ProviderEndpointOverrideValidator {
     }
 
     private func validatedDecodedHost(for url: URL, policy: HostPolicy) -> String? {
-        guard let decodedHost = url.host(percentEncoded: false)?.lowercased(),
+        guard let decodedHost = url.host?.lowercased(),
               !decodedHost.isEmpty,
               !decodedHost.contains("%"),
               decodedHost.rangeOfCharacter(from: .whitespacesAndNewlines) == nil,
               decodedHost.rangeOfCharacter(from: .controlCharacters) == nil,
-              let encodedHost = url.host(percentEncoded: true)?.lowercased(),
+              let encodedHost = Self.encodedHost(for: url)?.lowercased(),
               Self.hostHasNoEncodedDelimiters(encodedHost, decodedHost: decodedHost, url: url)
         else { return nil }
 
@@ -252,5 +252,16 @@ struct ProviderEndpointOverrideValidator {
 
         let encodedDelimiters = ["%2f", "%5c", "%3f", "%23", "%40", "%3a"]
         return !encodedDelimiters.contains { encodedHost.contains($0) }
+    }
+
+    private static func encodedHost(for url: URL) -> String? {
+        guard var encodedHost = URLComponents(url: url, resolvingAgainstBaseURL: false)?.percentEncodedHost else {
+            return nil
+        }
+        if encodedHost.hasPrefix("["), encodedHost.hasSuffix("]") {
+            encodedHost.removeFirst()
+            encodedHost.removeLast()
+        }
+        return encodedHost
     }
 }

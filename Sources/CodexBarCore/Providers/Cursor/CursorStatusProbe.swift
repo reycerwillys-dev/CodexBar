@@ -1564,8 +1564,10 @@ public struct CursorStatusProbe: Sendable {
         cookieHeader: String,
         deadline: Date?) async throws -> (CursorUsageResponse, String)
     {
-        let url = self.baseURL.appendingPathComponent("/api/usage")
-            .appending(queryItems: [URLQueryItem(name: "user", value: userId)])
+        let usageURL = self.baseURL.appendingPathComponent("/api/usage")
+        var components = URLComponents(url: usageURL, resolvingAgainstBaseURL: false)
+        components?.queryItems = (components?.queryItems ?? []) + [URLQueryItem(name: "user", value: userId)]
+        let url = components?.url ?? usageURL
         var request = URLRequest(url: url)
         request.timeoutInterval = try self.requestTimeout(deadline: deadline)
         request.setValue("application/json", forHTTPHeaderField: "Accept")

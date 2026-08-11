@@ -800,7 +800,7 @@ struct QoderWebFetchStrategy: ProviderFetchStrategy {
             .trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
         let lowercased = trimmed.lowercased()
         guard lowercased.hasPrefix("https://") || lowercased.hasPrefix("http://") else { return nil }
-        return URL(string: trimmed)?.host(percentEncoded: false)?.lowercased()
+        return URL(string: trimmed)?.host?.lowercased()
     }
 
     private static func site(forURLText text: String) -> QoderWebSite? {

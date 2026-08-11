@@ -1,5 +1,4 @@
 import Foundation
-import os.lock
 import Testing
 @testable import CodexBarCore
 
@@ -42,7 +41,7 @@ struct BrowserDetectionTests {
         if: ProcessInfo.processInfo.environment[BrowserCookieAccessGate.allowTestCookieAccessEnvironmentKey] == "1",
         "Default-home cookie access is explicitly enabled for this test run."))
     func `default home detection is suppressed before profile probes`() throws {
-        let probeCount = OSAllocatedUnfairLock(initialState: 0)
+        let probeCount = LockIsolated(initialState: 0)
         let defaultHome = try #require(BrowserCookieClient.defaultHomeDirectories().first)
         let detection = BrowserDetection(
             homeDirectory: defaultHome.path,
@@ -531,7 +530,7 @@ struct BrowserDetectionTests {
         FileManager.default.createFile(atPath: cookies.path, contents: Data())
         defer { try? FileManager.default.removeItem(at: temp) }
 
-        let installed = OSAllocatedUnfairLock(initialState: true)
+        let installed = LockIsolated(initialState: true)
         let detection = BrowserDetection(
             homeDirectory: temp.path,
             cacheTTL: 600,

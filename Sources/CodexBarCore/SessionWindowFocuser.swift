@@ -28,7 +28,7 @@ public enum SessionWindowFocuser {
     @discardableResult
     public static func focus(_ session: AgentSession, promptForAccessibility: Bool = true) -> SessionFocusResult {
         guard let application = self.application(for: session) else { return .failed }
-        guard application.activate() else { return .failed }
+        guard application.activate(options: [.activateIgnoringOtherApps]) else { return .failed }
 
         let trusted = AXIsProcessTrustedWithOptions(
             ["AXTrustedCheckOptionPrompt": promptForAccessibility] as CFDictionary)

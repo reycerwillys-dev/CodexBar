@@ -12,7 +12,7 @@ struct DocumentationLinkTests {
     @Test
     func `readme local documentation destinations resolve`() throws {
         let root = try Self.repoRoot()
-        let readme = try String(contentsOf: root.appending(path: "README.md"), encoding: .utf8)
+        let readme = try String(contentsOf: root.appendingPathComponent("README.md"), encoding: .utf8)
         let links = try (
             Self.markdownLinks(in: readme) +
                 Self.markdownImageLinks(in: readme) +
@@ -29,7 +29,7 @@ struct DocumentationLinkTests {
     func `provider overview detail docs resolve`() throws {
         let root = try Self.repoRoot()
         let providers = try String(
-            contentsOf: root.appending(path: "docs/providers.md"),
+            contentsOf: root.appendingPathComponent("docs/providers.md"),
             encoding: .utf8)
         let links = Self.inlineCodeDocLinks(in: providers)
 
@@ -111,7 +111,7 @@ struct DocumentationLinkTests {
 
     @Test
     func `local documentation paths normalize safely`() throws {
-        let root = URL(filePath: "/tmp/CodexBar-documentation-links", directoryHint: .isDirectory)
+        let root = URL(fileURLWithPath: "/tmp/CodexBar-documentation-links", isDirectory: true)
 
         let target = try Self.localDocURL(
             for: "./docs/guide%20name.md?mode=print#topic",
@@ -128,12 +128,12 @@ struct DocumentationLinkTests {
     @Test
     func `markdown fragments resolve to rendered heading anchors`() throws {
         let root = FileManager.default.temporaryDirectory
-            .appending(path: "DocumentationLinkTests-\(UUID().uuidString)", directoryHint: .isDirectory)
-        let docs = root.appending(path: "docs", directoryHint: .isDirectory)
+            .appendingPathComponent("DocumentationLinkTests-\(UUID().uuidString)", isDirectory: true)
+        let docs = root.appendingPathComponent("docs", isDirectory: true)
         try FileManager.default.createDirectory(at: docs, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
-        let guide = docs.appending(path: "guide.md")
+        let guide = docs.appendingPathComponent("guide.md")
         try """
         # Guide
         ## T3 Chat
@@ -225,7 +225,7 @@ struct DocumentationLinkTests {
 
     private static func validateLocalDocLink(_ rawLink: String, existsUnder root: URL) throws {
         let url = try Self.localDocURL(for: rawLink, repositoryRoot: root)
-        guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else {
+        guard FileManager.default.fileExists(atPath: url.path) else {
             throw DocumentationLinkError.missingTarget(rawLink)
         }
 
@@ -264,8 +264,8 @@ struct DocumentationLinkTests {
             throw DocumentationLinkError.invalidURL(rawLink)
         }
 
-        let target = root.appending(path: components.path).standardizedFileURL
-        let docsRoot = root.appending(path: "docs", directoryHint: .isDirectory).standardizedFileURL
+        let target = root.appendingPathComponent(components.path).standardizedFileURL
+        let docsRoot = root.appendingPathComponent("docs", isDirectory: true).standardizedFileURL
         guard target.path == docsRoot.path || target.path.hasPrefix(docsRoot.path + "/") else {
             throw DocumentationLinkError.outsideDocumentationRoot(components.path)
         }
@@ -362,10 +362,10 @@ struct DocumentationLinkTests {
     }
 
     private static func repoRoot() throws -> URL {
-        var dir = URL(filePath: #filePath).deletingLastPathComponent()
+        var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         while true {
-            let candidate = dir.appending(path: "Package.swift")
-            if FileManager.default.fileExists(atPath: candidate.path(percentEncoded: false)) {
+            let candidate = dir.appendingPathComponent("Package.swift")
+            if FileManager.default.fileExists(atPath: candidate.path) {
                 return dir
             }
             let parent = dir.deletingLastPathComponent()

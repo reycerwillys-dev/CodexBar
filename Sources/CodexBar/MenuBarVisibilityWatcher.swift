@@ -1,4 +1,5 @@
 import AppKit
+import CodexBarCore
 import Foundation
 
 struct StatusItemVisibilitySnapshot: Equatable {

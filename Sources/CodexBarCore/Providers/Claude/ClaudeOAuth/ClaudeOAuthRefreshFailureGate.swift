@@ -1,8 +1,6 @@
 import Foundation
 
 #if os(macOS)
-import os.lock
-
 public enum ClaudeOAuthRefreshFailureGate {
     public enum BlockStatus: Equatable, Sendable {
         case terminal(reason: String?, failures: Int)
@@ -42,7 +40,7 @@ public enum ClaudeOAuthRefreshFailureGate {
         var profiles: [String: State] = [:]
     }
 
-    private static let lock = OSAllocatedUnfairLock<LockedState>(initialState: LockedState())
+    private static let lock = StateLock<LockedState>(initialState: LockedState())
     private static let blockedUntilKey = "claudeOAuthRefreshBackoffBlockedUntilV1" // legacy (migration)
     private static let failureCountKey = "claudeOAuthRefreshBackoffFailureCountV1" // legacy + terminal count
     private static let fingerprintKey = "claudeOAuthRefreshBackoffFingerprintV2"

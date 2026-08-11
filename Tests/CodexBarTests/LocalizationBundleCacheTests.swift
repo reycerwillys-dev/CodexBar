@@ -59,12 +59,12 @@ struct LocalizationBundleCacheTests {
         let english = CodexBarLocalizationOverride.$appLanguage.withValue("en") {
             codexBarLocalizedResourceLocale()
         }
-        #expect(english.language.languageCode?.identifier == "en")
+        #expect(english.languageCode == "en")
 
         let fallback = CodexBarLocalizationOverride.$appLanguage.withValue("zz-unknown") {
             codexBarLocalizedResourceLocale()
         }
-        #expect(fallback.language.languageCode?.identifier == "en")
+        #expect(fallback.languageCode == "en")
     }
 
     @Test

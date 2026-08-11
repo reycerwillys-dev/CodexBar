@@ -1,5 +1,4 @@
 import Foundation
-import os.lock
 import Testing
 @testable import CodexBarCore
 
@@ -12,8 +11,8 @@ struct AlibabaCodingPlanCookieImporterTests {
         if: ProcessInfo.processInfo.environment[BrowserCookieAccessGate.allowTestCookieAccessEnvironmentKey] == "1",
         "Default-home cookie access is explicitly enabled for this test run."))
     func `default home import is suppressed before profile and keychain access`() throws {
-        let profileProbeCount = OSAllocatedUnfairLock(initialState: 0)
-        let keychainProbeCount = OSAllocatedUnfairLock(initialState: 0)
+        let profileProbeCount = LockIsolated(initialState: 0)
+        let keychainProbeCount = LockIsolated(initialState: 0)
         let defaultHome = try #require(BrowserCookieClient.defaultHomeDirectories().first)
         let detection = BrowserDetection(
             homeDirectory: defaultHome.path,
@@ -46,7 +45,7 @@ struct AlibabaCodingPlanCookieImporterTests {
         if: ProcessInfo.processInfo.environment[BrowserCookieAccessGate.allowTestCookieAccessEnvironmentKey] == "1",
         "Default-home cookie access is explicitly enabled for this test run."))
     func `chromium fallback rejects default client before keychain access`() {
-        let keychainProbeCount = OSAllocatedUnfairLock(initialState: 0)
+        let keychainProbeCount = LockIsolated(initialState: 0)
         _ = KeychainAccessGate.withTaskOverrideForTesting(false) {
             KeychainAccessPreflight.withCheckGenericPasswordOverrideForTesting { _, _ in
                 keychainProbeCount.withLock { $0 += 1 }

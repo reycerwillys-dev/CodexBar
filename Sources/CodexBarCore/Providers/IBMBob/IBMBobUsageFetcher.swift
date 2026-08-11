@@ -205,7 +205,7 @@ public enum IBMBobUsageFetcher {
         do {
             let profileResponse = try await transport.response(
                 for: self.request(
-                    url: self.baseURL.appending(path: "admin/v1/profile"),
+                    url: self.baseURL.appendingPathComponent("admin/v1/profile"),
                     token: token,
                     instanceID: nil,
                     teamID: nil),
@@ -220,10 +220,10 @@ public enum IBMBobUsageFetcher {
                 for team in instance.teams {
                     guard !team.id.isEmpty else { continue }
                     let url = regionalBaseURL
-                        .appending(path: "admin/v1/teams")
-                        .appending(path: team.id)
-                        .appending(path: "users")
-                        .appending(path: userID)
+                        .appendingPathComponent("admin/v1/teams")
+                        .appendingPathComponent(team.id)
+                        .appendingPathComponent("users")
+                        .appendingPathComponent(userID)
                     let response = try await transport.response(
                         for: self.request(
                             url: url,

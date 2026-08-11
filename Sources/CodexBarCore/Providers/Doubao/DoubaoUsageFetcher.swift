@@ -833,10 +833,10 @@ public struct DoubaoUsageFetcher: Sendable {
         }
 
         var seconds: TimeInterval = 0
-        let pattern = /(\d+)([dhms])/
-        for match in trimmed.matches(of: pattern) {
-            guard let num = Double(match.1) else { continue }
-            switch match.2 {
+        let matches = TextParsing.captureGroups(pattern: #"(\d+)([dhms])"#, text: trimmed)
+        for match in matches where match.count == 2 {
+            guard let num = Double(match[0]) else { continue }
+            switch match[1] {
             case "d": seconds += num * 86400
             case "h": seconds += num * 3600
             case "m": seconds += num * 60

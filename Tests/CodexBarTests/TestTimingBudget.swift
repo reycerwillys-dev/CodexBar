@@ -1,3 +1,4 @@
+import CodexBarCore
 import Foundation
 
 /// Wall-clock assertions in this suite are regression guards, not latency SLOs: they exist to

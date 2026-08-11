@@ -1,7 +1,6 @@
 import Foundation
 
 #if os(macOS)
-import os.lock
 import SweetCookieKit
 
 enum BrowserCookieStoreAccessDecision: Equatable {
@@ -28,7 +27,7 @@ public enum BrowserCookieAccessGate {
             var cookieReadClaimed = false
         }
 
-        private let lock = OSAllocatedUnfairLock<State>(initialState: State())
+        private let lock = StateLock<State>(initialState: State())
 
         func allows(_ browser: Browser) -> Bool {
             self.lock.withLock { state in
@@ -53,7 +52,7 @@ public enum BrowserCookieAccessGate {
         }
     }
 
-    private static let lock = OSAllocatedUnfairLock<State>(initialState: State())
+    private static let lock = StateLock<State>(initialState: State())
     private static let defaultsKey = "browserCookieAccessDeniedUntil"
     private static let chromiumFamilyDefaultsKey = "__chromiumFamily__"
     private static let cooldownInterval: TimeInterval = 60 * 60 * 6

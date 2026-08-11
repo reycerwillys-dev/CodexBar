@@ -1,8 +1,6 @@
 import Foundation
 
 #if os(macOS)
-import os.lock
-
 enum ClaudeOAuthKeychainPreAlertGate {
     fileprivate struct State {
         var loaded = false
@@ -10,13 +8,13 @@ enum ClaudeOAuthKeychainPreAlertGate {
         var presentationInFlight = false
     }
 
-    private static let lock = OSAllocatedUnfairLock<State>(initialState: State())
+    private static let lock = StateLock<State>(initialState: State())
     private static let defaultsKey = "claudeOAuthKeychainPreAlertAcknowledgedUntilV1"
     static let cooldownInterval: TimeInterval = 60 * 60 * 6
 
     #if DEBUG
     final class StateStore: @unchecked Sendable {
-        fileprivate let lock = OSAllocatedUnfairLock<State>(initialState: State(loaded: true))
+        fileprivate let lock = StateLock<State>(initialState: State(loaded: true))
     }
 
     @TaskLocal private static var taskStateStoreOverrideForTesting: StateStore?
