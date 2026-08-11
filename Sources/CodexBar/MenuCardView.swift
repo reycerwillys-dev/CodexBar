@@ -1,5 +1,6 @@
 import AppKit
 import CodexBarCore
+import Perception
 import SwiftUI
 
 /// SwiftUI card used inside the NSMenu to mirror Apple's rich menu panels.
@@ -195,94 +196,97 @@ struct UsageMenuCardView: View {
     }
 
     var body: some View {
-        let liveModel = self.liveModel
-        VStack(alignment: .leading, spacing: 0) {
-            UsageMenuCardHeaderView(
-                model: self.layoutModel ?? self.model,
-                planAction: self.planAction)
+        WithPerceptionTracking {
+            let liveModel = self.liveModel
+            VStack(alignment: .leading, spacing: 0) {
+                UsageMenuCardHeaderView(
+                    model: self.layoutModel ?? self.model,
+                    planAction: self.planAction)
 
-            if Self.hasDetails(for: liveModel) {
-                Divider()
-                    .padding(.top, UsageMenuCardLayout.headerContentSpacing)
-                    .padding(.bottom, Self.dividerBottomPadding(for: liveModel))
-            }
-
-            if !liveModel.usesStackedDetailLayout {
-                if let dashboard = liveModel.inlineUsageDashboard {
-                    InlineUsageDashboardContent(model: dashboard)
-                } else if !liveModel.usageNotes.isEmpty {
-                    UsageNotesContent(notes: liveModel.usageNotes)
-                } else if let placeholder = liveModel.placeholder {
-                    // Non-stacked placeholders are standalone detail rows; stacked usage placeholders are gated below.
-                    Text(placeholder)
-                        .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
-                        .font(.subheadline)
+                if Self.hasDetails(for: liveModel) {
+                    Divider()
+                        .padding(.top, UsageMenuCardLayout.headerContentSpacing)
+                        .padding(.bottom, Self.dividerBottomPadding(for: liveModel))
                 }
-                if !liveModel.providerDetails.isEmpty {
-                    ProviderDetailSectionsContent(
-                        sections: liveModel.providerDetails,
-                        chartColor: liveModel.progressColor)
-                }
-            } else {
-                let hasUsage = liveModel.hasUsageContent
-                let hasCredits = liveModel.creditsText != nil
-                let hasProviderCost = liveModel.providerCost != nil
-                let hasCost = liveModel.tokenUsage != nil || hasProviderCost
 
-                VStack(alignment: .leading, spacing: 12) {
-                    if hasUsage, !liveModel.creditsOnlyInlineUsageDashboard {
-                        UsageMenuCardUsageContentView(model: liveModel, showBottomDivider: false)
-                    }
-                    if hasUsage, !liveModel.creditsOnlyInlineUsageDashboard, hasCredits || hasCost {
-                        Divider()
-                    }
-                    if let credits = liveModel.creditsText {
-                        CreditsBarContent(
-                            creditsText: credits,
-                            creditsRemaining: liveModel.creditsRemaining,
-                            progressPercent: liveModel.creditsProgressPercent,
-                            scaleText: liveModel.creditsScaleText,
-                            hintText: liveModel.creditsHintText,
-                            hintCopyText: liveModel.creditsHintCopyText,
-                            progressColor: liveModel.progressColor)
-                    }
-                    if liveModel.creditsOnlyInlineUsageDashboard, let dashboard = liveModel.inlineUsageDashboard {
+                if !liveModel.usesStackedDetailLayout {
+                    if let dashboard = liveModel.inlineUsageDashboard {
                         InlineUsageDashboardContent(model: dashboard)
+                    } else if !liveModel.usageNotes.isEmpty {
+                        UsageNotesContent(notes: liveModel.usageNotes)
+                    } else if let placeholder = liveModel.placeholder {
+                        // Non-stacked placeholders are standalone detail rows; stacked usage placeholders are gated
+                        // below.
+                        Text(placeholder)
+                            .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
+                            .font(.subheadline)
                     }
-                    if hasCredits, hasCost {
-                        Divider()
+                    if !liveModel.providerDetails.isEmpty {
+                        ProviderDetailSectionsContent(
+                            sections: liveModel.providerDetails,
+                            chartColor: liveModel.progressColor)
                     }
-                    if let providerCost = liveModel.providerCost {
-                        ProviderCostContent(
-                            section: providerCost,
-                            progressColor: liveModel.progressColor)
-                    }
-                    if hasProviderCost, liveModel.tokenUsage != nil {
-                        Divider()
-                    }
-                    if let tokenUsage = liveModel.tokenUsage {
-                        TokenUsageSectionContent(
-                            provider: liveModel.provider,
-                            tokenUsage: tokenUsage,
-                            showsCodexHint: liveModel.inlineUsageDashboard == nil,
-                            lineFont: .footnote)
+                } else {
+                    let hasUsage = liveModel.hasUsageContent
+                    let hasCredits = liveModel.creditsText != nil
+                    let hasProviderCost = liveModel.providerCost != nil
+                    let hasCost = liveModel.tokenUsage != nil || hasProviderCost
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        if hasUsage, !liveModel.creditsOnlyInlineUsageDashboard {
+                            UsageMenuCardUsageContentView(model: liveModel, showBottomDivider: false)
+                        }
+                        if hasUsage, !liveModel.creditsOnlyInlineUsageDashboard, hasCredits || hasCost {
+                            Divider()
+                        }
+                        if let credits = liveModel.creditsText {
+                            CreditsBarContent(
+                                creditsText: credits,
+                                creditsRemaining: liveModel.creditsRemaining,
+                                progressPercent: liveModel.creditsProgressPercent,
+                                scaleText: liveModel.creditsScaleText,
+                                hintText: liveModel.creditsHintText,
+                                hintCopyText: liveModel.creditsHintCopyText,
+                                progressColor: liveModel.progressColor)
+                        }
+                        if liveModel.creditsOnlyInlineUsageDashboard, let dashboard = liveModel.inlineUsageDashboard {
+                            InlineUsageDashboardContent(model: dashboard)
+                        }
+                        if hasCredits, hasCost {
+                            Divider()
+                        }
+                        if let providerCost = liveModel.providerCost {
+                            ProviderCostContent(
+                                section: providerCost,
+                                progressColor: liveModel.progressColor)
+                        }
+                        if hasProviderCost, liveModel.tokenUsage != nil {
+                            Divider()
+                        }
+                        if let tokenUsage = liveModel.tokenUsage {
+                            TokenUsageSectionContent(
+                                provider: liveModel.provider,
+                                tokenUsage: tokenUsage,
+                                showsCodexHint: liveModel.inlineUsageDashboard == nil,
+                                lineFont: .footnote)
+                        }
                     }
                 }
             }
+            .padding(.horizontal, UsageMenuCardLayout.horizontalPadding)
+            .padding(
+                .top,
+                Self.hasDetails(for: liveModel)
+                    ? UsageMenuCardLayout.sectionTopPadding
+                    : UsageMenuCardLayout.headerOnlyVerticalPadding)
+            // AppKit's following separator row adds visual bottom space, so detail cards keep this inset tight.
+            .padding(
+                .bottom,
+                Self.hasDetails(for: liveModel)
+                    ? UsageMenuCardLayout.sectionBottomPadding
+                    : UsageMenuCardLayout.headerOnlyVerticalPadding)
+            .frame(width: self.width, alignment: .leading)
         }
-        .padding(.horizontal, UsageMenuCardLayout.horizontalPadding)
-        .padding(
-            .top,
-            Self.hasDetails(for: liveModel)
-                ? UsageMenuCardLayout.sectionTopPadding
-                : UsageMenuCardLayout.headerOnlyVerticalPadding)
-        // AppKit's following separator row adds visual bottom space, so detail cards keep this inset tight.
-        .padding(
-            .bottom,
-            Self.hasDetails(for: liveModel)
-                ? UsageMenuCardLayout.sectionBottomPadding
-                : UsageMenuCardLayout.headerOnlyVerticalPadding)
-        .frame(width: self.width, alignment: .leading)
     }
 
     private var liveModel: Model {
@@ -309,76 +313,78 @@ private struct UsageMenuCardHeaderView: View {
     @Environment(\.menuCardRefreshMonitor) private var refreshMonitor
 
     var body: some View {
-        VStack(alignment: .leading, spacing: UsageMenuCardLayout.headerLineSpacing) {
-            HStack(alignment: .firstTextBaseline, spacing: UsageMenuCardLayout.headerColumnSpacing) {
-                Text(self.model.providerName).font(.headline)
-                    .fontWeight(.semibold)
-                    .lineLimit(1).truncationMode(.tail).layoutPriority(1)
-                Spacer()
-                Text(self.model.email).font(.subheadline)
-                    .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
-                    .lineLimit(1).truncationMode(.middle)
-            }
-            let liveSubtitle = self.liveSubtitle
-            // Keep the geometry AppKit measured for this hosted row. A new error stays one line
-            // until the next rebuild; a recovered error keeps its reserved height until then.
-            let usesErrorLayout = self.model.subtitleStyle == .error
-            let subtitleAlignment: VerticalAlignment = usesErrorLayout ? .top : .firstTextBaseline
-            HStack(alignment: subtitleAlignment, spacing: UsageMenuCardLayout.headerColumnSpacing) {
-                if usesErrorLayout {
-                    Text(self.model.subtitleText)
-                        .font(.footnote)
-                        .lineLimit(4)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.bottom, 4)
-                        .hidden()
-                        .overlay(alignment: .topLeading) {
-                            Text(liveSubtitle.text)
-                                .font(.footnote)
-                                .foregroundStyle(self.subtitleColor(for: liveSubtitle.style))
-                                .lineLimit(4)
-                                .multilineTextAlignment(.leading)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .clipped()
-                        .layoutPriority(1)
-                } else {
-                    Text(liveSubtitle.text)
-                        .font(.footnote)
-                        .foregroundStyle(self.subtitleColor(for: liveSubtitle.style))
-                        .lineLimit(1)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .layoutPriority(1)
+        WithPerceptionTracking {
+            VStack(alignment: .leading, spacing: UsageMenuCardLayout.headerLineSpacing) {
+                HStack(alignment: .firstTextBaseline, spacing: UsageMenuCardLayout.headerColumnSpacing) {
+                    Text(self.model.providerName).font(.headline)
+                        .fontWeight(.semibold)
+                        .lineLimit(1).truncationMode(.tail).layoutPriority(1)
+                    Spacer()
+                    Text(self.model.email).font(.subheadline)
+                        .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
+                        .lineLimit(1).truncationMode(.middle)
                 }
-                Spacer()
-                if usesErrorLayout {
-                    let showsCopyButton = liveSubtitle.style == .error && !liveSubtitle.text.isEmpty
-                    CopyIconButton(
-                        copyText: liveSubtitle.text,
-                        isHighlighted: self.isHighlighted,
-                        isInteractive: showsCopyButton)
-                        .opacity(showsCopyButton ? 1 : 0)
-                        .allowsHitTesting(showsCopyButton)
-                        .accessibilityHidden(!showsCopyButton)
-                }
-                if let plan = self.model.planText {
-                    Group {
-                        if let planAction {
-                            Button(action: planAction) {
+                let liveSubtitle = self.liveSubtitle
+                // Keep the geometry AppKit measured for this hosted row. A new error stays one line
+                // until the next rebuild; a recovered error keeps its reserved height until then.
+                let usesErrorLayout = self.model.subtitleStyle == .error
+                let subtitleAlignment: VerticalAlignment = usesErrorLayout ? .top : .firstTextBaseline
+                HStack(alignment: subtitleAlignment, spacing: UsageMenuCardLayout.headerColumnSpacing) {
+                    if usesErrorLayout {
+                        Text(self.model.subtitleText)
+                            .font(.footnote)
+                            .lineLimit(4)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.bottom, 4)
+                            .hidden()
+                            .overlay(alignment: .topLeading) {
+                                Text(liveSubtitle.text)
+                                    .font(.footnote)
+                                    .foregroundStyle(self.subtitleColor(for: liveSubtitle.style))
+                                    .lineLimit(4)
+                                    .multilineTextAlignment(.leading)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .clipped()
+                            .layoutPriority(1)
+                    } else {
+                        Text(liveSubtitle.text)
+                            .font(.footnote)
+                            .foregroundStyle(self.subtitleColor(for: liveSubtitle.style))
+                            .lineLimit(1)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .layoutPriority(1)
+                    }
+                    Spacer()
+                    if usesErrorLayout {
+                        let showsCopyButton = liveSubtitle.style == .error && !liveSubtitle.text.isEmpty
+                        CopyIconButton(
+                            copyText: liveSubtitle.text,
+                            isHighlighted: self.isHighlighted,
+                            isInteractive: showsCopyButton)
+                            .opacity(showsCopyButton ? 1 : 0)
+                            .allowsHitTesting(showsCopyButton)
+                            .accessibilityHidden(!showsCopyButton)
+                    }
+                    if let plan = self.model.planText {
+                        Group {
+                            if let planAction {
+                                Button(action: planAction) {
+                                    Text(plan)
+                                }
+                                .buttonStyle(.plain)
+                                .menuCardInteractiveControl()
+                                .accessibilityLabel(plan)
+                            } else {
                                 Text(plan)
                             }
-                            .buttonStyle(.plain)
-                            .menuCardInteractiveControl()
-                            .accessibilityLabel(plan)
-                        } else {
-                            Text(plan)
                         }
+                        .font(.footnote)
+                        .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
+                        .lineLimit(1)
                     }
-                    .font(.footnote)
-                    .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
-                    .lineLimit(1)
                 }
             }
         }
@@ -754,15 +760,17 @@ struct UsageMenuCardUsageSectionView: View {
     @Environment(\.menuCardRefreshMonitor) private var refreshMonitor
 
     var body: some View {
-        let liveModel = self.liveModel
-        UsageMenuCardUsageContentView(
-            model: liveModel,
-            showBottomDivider: self.showBottomDivider,
-            showsSectionDividers: self.showsSectionDividers)
-            .padding(.horizontal, UsageMenuCardLayout.horizontalPadding)
-            .padding(.top, UsageMenuCardLayout.usageSectionTopPadding)
-            .padding(.bottom, self.bottomPadding)
-            .frame(width: self.width, alignment: .leading)
+        WithPerceptionTracking {
+            let liveModel = self.liveModel
+            UsageMenuCardUsageContentView(
+                model: liveModel,
+                showBottomDivider: self.showBottomDivider,
+                showsSectionDividers: self.showsSectionDividers)
+                .padding(.horizontal, UsageMenuCardLayout.horizontalPadding)
+                .padding(.top, UsageMenuCardLayout.usageSectionTopPadding)
+                .padding(.bottom, self.bottomPadding)
+                .frame(width: self.width, alignment: .leading)
+        }
     }
 
     private var liveModel: UsageMenuCardView.Model {
@@ -780,25 +788,27 @@ struct UsageMenuCardCreditsSectionView: View {
     @Environment(\.menuCardRefreshMonitor) private var refreshMonitor
 
     var body: some View {
-        let liveModel = self.liveModel
-        if let credits = liveModel.creditsText {
-            VStack(alignment: .leading, spacing: 6) {
-                CreditsBarContent(
-                    creditsText: credits,
-                    creditsRemaining: liveModel.creditsRemaining,
-                    progressPercent: liveModel.creditsProgressPercent,
-                    scaleText: liveModel.creditsScaleText,
-                    hintText: liveModel.creditsHintText,
-                    hintCopyText: liveModel.creditsHintCopyText,
-                    progressColor: liveModel.progressColor)
-                if self.showBottomDivider {
-                    Divider()
+        WithPerceptionTracking {
+            let liveModel = self.liveModel
+            if let credits = liveModel.creditsText {
+                VStack(alignment: .leading, spacing: 6) {
+                    CreditsBarContent(
+                        creditsText: credits,
+                        creditsRemaining: liveModel.creditsRemaining,
+                        progressPercent: liveModel.creditsProgressPercent,
+                        scaleText: liveModel.creditsScaleText,
+                        hintText: liveModel.creditsHintText,
+                        hintCopyText: liveModel.creditsHintCopyText,
+                        progressColor: liveModel.progressColor)
+                    if self.showBottomDivider {
+                        Divider()
+                    }
                 }
+                .padding(.horizontal, UsageMenuCardLayout.horizontalPadding)
+                .padding(.top, self.topPadding)
+                .padding(.bottom, self.bottomPadding)
+                .frame(width: self.width, alignment: .leading)
             }
-            .padding(.horizontal, UsageMenuCardLayout.horizontalPadding)
-            .padding(.top, self.topPadding)
-            .padding(.bottom, self.bottomPadding)
-            .frame(width: self.width, alignment: .leading)
         }
     }
 
@@ -882,23 +892,25 @@ struct UsageMenuCardCostSectionView: View {
     @Environment(\.menuCardRefreshMonitor) private var refreshMonitor
 
     var body: some View {
-        let liveModel = self.liveModel
-        let hasTokenCost = liveModel.tokenUsage != nil
-        return Group {
-            if hasTokenCost {
-                VStack(alignment: .leading, spacing: 10) {
-                    if let tokenUsage = liveModel.tokenUsage {
-                        TokenUsageSectionContent(
-                            provider: liveModel.provider,
-                            tokenUsage: tokenUsage,
-                            showsCodexHint: true,
-                            lineFont: .caption)
+        WithPerceptionTracking {
+            let liveModel = self.liveModel
+            let hasTokenCost = liveModel.tokenUsage != nil
+            return Group {
+                if hasTokenCost {
+                    VStack(alignment: .leading, spacing: 10) {
+                        if let tokenUsage = liveModel.tokenUsage {
+                            TokenUsageSectionContent(
+                                provider: liveModel.provider,
+                                tokenUsage: tokenUsage,
+                                showsCodexHint: true,
+                                lineFont: .caption)
+                        }
                     }
+                    .padding(.horizontal, UsageMenuCardLayout.horizontalPadding)
+                    .padding(.top, self.topPadding)
+                    .padding(.bottom, self.bottomPadding)
+                    .frame(width: self.width, alignment: .leading)
                 }
-                .padding(.horizontal, UsageMenuCardLayout.horizontalPadding)
-                .padding(.top, self.topPadding)
-                .padding(.bottom, self.bottomPadding)
-                .frame(width: self.width, alignment: .leading)
             }
         }
     }
@@ -917,16 +929,18 @@ struct UsageMenuCardExtraUsageSectionView: View {
     @Environment(\.menuCardRefreshMonitor) private var refreshMonitor
 
     var body: some View {
-        let liveModel = self.liveModel
-        Group {
-            if let providerCost = liveModel.providerCost {
-                ProviderCostContent(
-                    section: providerCost,
-                    progressColor: liveModel.progressColor)
-                    .padding(.horizontal, UsageMenuCardLayout.horizontalPadding)
-                    .padding(.top, self.topPadding)
-                    .padding(.bottom, self.bottomPadding)
-                    .frame(width: self.width, alignment: .leading)
+        WithPerceptionTracking {
+            let liveModel = self.liveModel
+            Group {
+                if let providerCost = liveModel.providerCost {
+                    ProviderCostContent(
+                        section: providerCost,
+                        progressColor: liveModel.progressColor)
+                        .padding(.horizontal, UsageMenuCardLayout.horizontalPadding)
+                        .padding(.top, self.topPadding)
+                        .padding(.bottom, self.bottomPadding)
+                        .frame(width: self.width, alignment: .leading)
+                }
             }
         }
     }
