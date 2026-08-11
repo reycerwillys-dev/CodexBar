@@ -3,7 +3,7 @@ id: MAC12-06
 title: 集成、目标机验收与交付
 status: BLOCKED
 owner: coordinator
-depends_on: [MAC12-01, MAC12-02, MAC12-03, MAC12-04, MAC12-05]
+depends_on: [MAC12-01, MAC12-02, MAC12-03, MAC12-04, MAC12-05, MAC12-07]
 updated_at: 2026-08-12
 ---
 

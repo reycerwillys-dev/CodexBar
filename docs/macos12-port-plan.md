@@ -78,6 +78,7 @@
 | `MAC12-03` | App 生命周期与设置窗口 | 是 | AppKit 设置窗口、打开/关闭/重复打开流程 |
 | `MAC12-04` | Charts、Spend 与 Widget | 是 | 图表可用性隔离、Monterey 回退、Widget 编译 |
 | `MAC12-05` | 构建矩阵与自动化测试 | 是 | Swift 6.2 x86_64 构建、API 扫描、CI/脚本 |
+| `MAC12-07` | Core / CLI 运行时 API | 是 | Foundation 新 API 回退、核心与测试的 Monterey 兼容 |
 | `MAC12-06` | 集成、目标机验收与交付 | 否 | 合并、回归、打包、真实运行验证 |
 
 详细说明见 `tasks/macos12/TASK-*.md`。
@@ -206,4 +207,3 @@ x86_64-apple-macosx12.0
 - 每个兼容子任务独立提交，出现回归时按 Task 回滚。
 - 不删除新系统路径；回滚 Monterey 回退不应影响 macOS 13+ 原功能。
 - `swift-perception` 若引发不可接受的问题，回滚 `MAC12-01` 并重新评估 Combine/ObservableObject 路线，而不是局部混用两套 observation。
-

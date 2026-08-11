@@ -12,7 +12,8 @@
 | MAC12-03 | IN_PROGRESS | Meitner | MAC12-00 | [TASK-03](TASK-03-settings-lifecycle.md) |
 | MAC12-04 | IN_PROGRESS | Hubble | MAC12-00 | [TASK-04](TASK-04-charts-widgets.md) |
 | MAC12-05 | IN_PROGRESS | Avicenna | MAC12-00 | [TASK-05](TASK-05-build-test-matrix.md) |
-| MAC12-06 | BLOCKED | coordinator | MAC12-01..05 | [TASK-06](TASK-06-integration-release.md) |
+| MAC12-07 | IN_PROGRESS | Carson | MAC12-00 | [TASK-07](TASK-07-core-runtime-apis.md) |
+| MAC12-06 | BLOCKED | coordinator | MAC12-01..05, MAC12-07 | [TASK-06](TASK-06-integration-release.md) |
 
 ## 协调约定
 
