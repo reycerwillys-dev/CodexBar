@@ -89,8 +89,8 @@ private struct CombinedBurnDownLayout: View {
                 Spacer()
                 Text("Session & weekly limits")
                     .font(.system(size: 10))
-                    .foregroundStyle(baseTheme.sub)
                     .kerning(0.3)
+                    .foregroundStyle(baseTheme.sub)
             }
 
             // Two rows
@@ -204,8 +204,8 @@ private struct CombinedBurnRow: View {
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                     Text(self.tag)
                         .font(.system(size: 9.5, weight: .heavy))
-                        .foregroundStyle(self.theme.sub)
                         .kerning(1)
+                        .foregroundStyle(self.theme.sub)
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
                         if !prefixArrow {
                             Text(arrow)
@@ -293,8 +293,8 @@ private struct CombinedEmptyRow: View {
         HStack {
             Text(self.tag)
                 .font(.system(size: 9.5, weight: .heavy))
-                .foregroundStyle(self.theme.sub)
                 .kerning(1)
+                .foregroundStyle(self.theme.sub)
             Text("No data")
                 .font(.system(size: 10))
                 .foregroundStyle(self.theme.sub)

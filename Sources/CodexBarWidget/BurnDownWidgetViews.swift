@@ -163,8 +163,8 @@ private struct BurnDownLayout: View {
                     }
                     Text(burnWindowLabel(self.window.windowMinutes))
                         .font(.system(size: 11))
-                        .foregroundStyle(theme.sub)
                         .kerning(0.2)
+                        .foregroundStyle(theme.sub)
                 }
 
                 Spacer()
