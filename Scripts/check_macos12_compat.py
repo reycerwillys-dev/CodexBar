@@ -42,6 +42,13 @@ SOURCE_PREFILTER_MARKERS = (
     "containerBackground",
     "onKeyPress",
     "ProposedViewSize",
+    "CKSyncEngine",
+    "CADisplayLink",
+    "SMAppService",
+    ".plotFrame",
+    ".listRowSeparator",
+    ".menuStyle",
+    ".resolve(in:",
     "OSAllocatedUnfairLock",
     "ExecutorJob",
     ".gmt",
@@ -268,6 +275,48 @@ GUARDED_RULES = (
         re.compile(r"\bProposedViewSize\b"),
         "NSViewRepresentable ProposedViewSize sizing requires a macOS 13 availability boundary",
         13,
+    ),
+    Rule(
+        "cloudkit-sync-engine",
+        re.compile(r"\bCKSyncEngine\b"),
+        "CKSyncEngine requires a macOS 14 availability boundary and a Monterey fallback",
+        14,
+    ),
+    Rule(
+        "core-animation-display-link",
+        re.compile(r"\bCADisplayLink\b"),
+        "CADisplayLink requires a macOS 14 availability boundary; use CVDisplayLink on Monterey",
+        14,
+    ),
+    Rule(
+        "service-management-app-service",
+        re.compile(r"\bSMAppService\b"),
+        "SMAppService requires a macOS 13 availability boundary and a Monterey login-item fallback",
+        13,
+    ),
+    Rule(
+        "charts-plot-frame",
+        re.compile(r"[.]plotFrame\b"),
+        "ChartProxy.plotFrame requires macOS 14; use plotAreaFrame on macOS 13",
+        14,
+    ),
+    Rule(
+        "list-row-separator",
+        re.compile(r"[.]listRowSeparator\s*\("),
+        "listRowSeparator requires a macOS 13 availability boundary",
+        13,
+    ),
+    Rule(
+        "button-menu-style",
+        re.compile(r"[.]menuStyle\s*\(\s*[.]button\s*\)"),
+        "MenuStyle.button requires a macOS 13 availability boundary",
+        13,
+    ),
+    Rule(
+        "shape-style-resolve",
+        re.compile(r"[.]resolve\s*\(\s*in\s*:"),
+        "ShapeStyle.resolve(in:) requires a macOS 14 availability boundary",
+        14,
     ),
 )
 
@@ -574,6 +623,35 @@ def run_self_tests() -> None:
             "ProposedViewSize requires a declaration guard",
             "func legacy(_ proposal: ProposedViewSize) {}\n"
             "@available(macOS 13, *)\nfunc modern(_ proposal: ProposedViewSize) {}",
+            1,
+        ),
+        (
+            "CloudKit and display-link types require macOS 14",
+            "let engine: CKSyncEngine?\n"
+            "let displayLink: CADisplayLink?\n"
+            "@available(macOS 14, *)\nstruct Modern { let engine: CKSyncEngine?; let link: CADisplayLink? }",
+            2,
+        ),
+        (
+            "system and view modifiers require guards",
+            "let service = SMAppService.mainApp\n"
+            "Text(\"x\").listRowSeparator(.hidden)\n"
+            "Menu { }.menuStyle(.button)\n"
+            "@available(macOS 13, *)\n"
+            "func modern() { _ = SMAppService.mainApp; Text(\"x\").listRowSeparator(.hidden) }",
+            3,
+        ),
+        (
+            "Chart plot frames distinguish macOS 13 and 14",
+            "import Charts\n"
+            "@available(macOS 13, *)\nfunc legacy(_ proxy: ChartProxy) { _ = proxy.plotFrame }\n"
+            "@available(macOS 14, *)\nfunc modern(_ proxy: ChartProxy) { _ = proxy.plotFrame }",
+            1,
+        ),
+        (
+            "ShapeStyle resolve requires macOS 14",
+            "let legacy = color.resolve(in: environment)\n"
+            "@available(macOS 14, *)\nfunc modern() { _ = color.resolve(in: environment) }",
             1,
         ),
     )
