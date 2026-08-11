@@ -1,4 +1,5 @@
 import AppKit
+import CodexBarCore
 import Perception
 import SwiftUI
 

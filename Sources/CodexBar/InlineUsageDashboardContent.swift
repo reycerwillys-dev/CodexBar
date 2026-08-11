@@ -388,7 +388,8 @@ struct InlineUsageDashboardContent: View {
             alignment: .leading,
             spacing: 6)
         {
-            ForEach(Array(self.model.kpis.enumerated()), id: \.offset) { kpi in
+            ForEach(Array(self.model.kpis.enumerated()), id: \.offset) { entry in
+                let kpi = entry.element
                 KPIBlock(title: kpi.title, value: kpi.value, emphasis: kpi.emphasis)
             }
         }
@@ -396,8 +397,8 @@ struct InlineUsageDashboardContent: View {
 
     private var detailLines: some View {
         VStack(alignment: .leading, spacing: 3) {
-            ForEach(Array(self.model.detailLines.enumerated()), id: \.offset) { line in
-                Text(line)
+            ForEach(Array(self.model.detailLines.enumerated()), id: \.offset) { entry in
+                Text(entry.element)
                     .font(.caption)
                     .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
                     .lineLimit(1)
