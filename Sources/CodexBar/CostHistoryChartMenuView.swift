@@ -107,7 +107,7 @@ struct CostHistoryChartMenuView: View {
     private var chartBody: some View {
         let model = Self.makeModel(provider: self.provider, daily: self.daily)
         let selectedDateKey = self.selectedDateKey ?? Self.defaultSelectedDateKey(model: model)
-        VStack(alignment: .leading, spacing: Self.outerSpacing) {
+        return VStack(alignment: .leading, spacing: Self.outerSpacing) {
             if model.points.isEmpty {
                 Text(L("No cost history data."))
                     .font(.footnote)
@@ -336,7 +336,7 @@ struct CostHistoryChartMenuView: View {
             ? nil
             : model.points.reduce(0) { $0 + $1.costUSD })
 
-        VStack(alignment: .leading, spacing: 6) {
+        return VStack(alignment: .leading, spacing: 6) {
             if model.points.isEmpty, summarizedTotal == nil {
                 Text(L("No cost history data."))
                     .font(.footnote)
@@ -709,8 +709,7 @@ struct CostHistoryChartMenuView: View {
     @available(macOS 13, *)
     private func selectionBandRect(model: Model, proxy: ChartProxy, geo: GeometryProxy) -> CGRect? {
         guard let key = self.selectedDateKey else { return nil }
-        guard let plotAnchor = proxy.plotFrame else { return nil }
-        let plotFrame = geo[plotAnchor]
+        guard let plotFrame = self.resolvedPlotFrame(proxy: proxy, geo: geo) else { return nil }
         guard let index = model.dateKeys.firstIndex(where: { $0.key == key }) else { return nil }
         let date = model.dateKeys[index].date
         guard let x = proxy.position(forX: date) else { return nil }
@@ -736,8 +735,7 @@ struct CostHistoryChartMenuView: View {
         // model-breakdown scroller remains interactive. The selection resets with the menu view.
         guard let location else { return }
 
-        guard let plotAnchor = proxy.plotFrame else { return }
-        let plotFrame = geo[plotAnchor]
+        guard let plotFrame = self.resolvedPlotFrame(proxy: proxy, geo: geo) else { return }
         guard plotFrame.contains(location) else { return }
 
         let xInPlot = location.x - plotFrame.origin.x
@@ -761,6 +759,16 @@ struct CostHistoryChartMenuView: View {
         if self.selectedDateKey != nearest {
             self.selectedDateKey = nearest
         }
+    }
+
+    @available(macOS 13, *)
+    private func resolvedPlotFrame(proxy: ChartProxy, geo: GeometryProxy) -> CGRect? {
+        if #available(macOS 14, *) {
+            guard let plotAnchor = proxy.plotFrame else { return nil }
+            return geo[plotAnchor]
+        }
+
+        return geo[proxy.plotAreaFrame]
     }
     #endif
 

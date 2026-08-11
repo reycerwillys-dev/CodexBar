@@ -127,7 +127,7 @@ struct PlanUtilizationHistoryChartMenuView: View {
             ?? self.visibleSeries.first
         let model = effectiveSelectedSeries.flatMap { self.modelsBySeriesID[$0.id] } ?? self.emptyModel
 
-        VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: 10) {
             if self.visibleSeries.count > 1 {
                 Picker(selection: Binding(
                     get: { effectiveSelectedSeries?.id ?? "" },
@@ -875,8 +875,7 @@ struct PlanUtilizationHistoryChartMenuView: View {
             return
         }
 
-        guard let plotAnchor = proxy.plotFrame else { return }
-        let plotFrame = geo[plotAnchor]
+        guard let plotFrame = self.resolvedPlotFrame(proxy: proxy, geo: geo) else { return }
         guard plotFrame.contains(location) else {
             if self.selectedPointID != nil {
                 self.selectedPointID = nil
@@ -914,6 +913,16 @@ struct PlanUtilizationHistoryChartMenuView: View {
         if self.selectedPointID != best?.id {
             self.selectedPointID = best?.id
         }
+    }
+
+    @available(macOS 13, *)
+    private func resolvedPlotFrame(proxy: ChartProxy, geo: GeometryProxy) -> CGRect? {
+        if #available(macOS 14, *) {
+            guard let plotAnchor = proxy.plotFrame else { return nil }
+            return geo[plotAnchor]
+        }
+
+        return geo[proxy.plotAreaFrame]
     }
     #endif
 }
