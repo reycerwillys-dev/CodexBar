@@ -1,13 +1,14 @@
 import CodexBarCore
 import SwiftUI
+import Perception
 
 @MainActor
 struct MenuBarPane: View {
     private static let maxOverviewProviders = SettingsStore.mergedOverviewProviderLimit
 
     @State private var isOverviewProviderPopoverPresented = false
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
+    @Perception.Bindable var settings: SettingsStore
+    @Perception.Bindable var store: UsageStore
 
     static func overviewProviderLimitText(limit: Int = Self.maxOverviewProviders) -> String {
         L("overview_choose_providers", String(limit))
@@ -18,98 +19,103 @@ struct MenuBarPane: View {
     }
 
     var body: some View {
-        Form {
-            Section {
-                SettingsMenuPicker(
-                    selection: self.$settings.menuBarIconStyle,
-                    options: MenuBarSettingsMenuOptions.iconStyles,
-                    label: {
+
+        WithPerceptionTracking {
+            Form {
+                Section {
+                    SettingsMenuPicker(
+                        selection: self.$settings.menuBarIconStyle,
+                        options: MenuBarSettingsMenuOptions.iconStyles,
+                        label: {
+                            SettingsRowLabel(
+                                L("menu_bar_style_title"),
+                                subtitle: L("menu_bar_style_subtitle"))
+                        },
+                        optionLabel: { style in
+                            Text(style.label)
+                        })
+
+                    Toggle(isOn: self.$settings.menuBarHighContrastOnInactiveDisplays) {
                         SettingsRowLabel(
-                            L("menu_bar_style_title"),
-                            subtitle: L("menu_bar_style_subtitle"))
-                    },
-                    optionLabel: { style in
-                        Text(style.label)
-                    })
-
-                Toggle(isOn: self.$settings.menuBarHighContrastOnInactiveDisplays) {
-                    SettingsRowLabel(
-                        L("menu_bar_inactive_display_contrast_title"),
-                        subtitle: "\(MenuBarIconStyle.iconAndPercent.label): "
-                            + L("menu_bar_inactive_display_contrast_subtitle"))
-                }
-                .disabled(!Self.inactiveDisplayContrastAvailable(for: self.settings.menuBarIconStyle))
-            } header: {
-                Text(L("section_icon"))
-            }
-
-            Section {
-                MenuBarLayoutEditor(settings: self.settings, store: self.store)
-                    .disabled(self.settings.menuBarIconStyle != .iconAndPercent)
-            } header: {
-                Text(L("menu_bar_layout_title"))
-            } footer: {
-                SettingsSectionFooter(L("menu_bar_layout_footer"))
-            }
-
-            Section {
-                Toggle(isOn: self.$settings.mergeIcons) {
-                    SettingsRowLabel(L("merge_icons_title"), subtitle: L("merge_icons_subtitle"))
+                            L("menu_bar_inactive_display_contrast_title"),
+                            subtitle: "\(MenuBarIconStyle.iconAndPercent.label): "
+                                + L("menu_bar_inactive_display_contrast_subtitle"))
+                    }
+                    .disabled(!Self.inactiveDisplayContrastAvailable(for: self.settings.menuBarIconStyle))
+                } header: {
+                    Text(L("section_icon"))
                 }
 
-                SettingsMenuPicker(
-                    selection: self.$settings.switcherRowsOption,
-                    options: MenuBarSettingsMenuOptions.switcherRows,
-                    label: { Text(L("switcher_rows_title")) },
-                    optionLabel: { option in
-                        Text(option.label)
-                    })
+                Section {
+                    MenuBarLayoutEditor(settings: self.settings, store: self.store)
+                        .disabled(self.settings.menuBarIconStyle != .iconAndPercent)
+                } header: {
+                    Text(L("menu_bar_layout_title"))
+                } footer: {
+                    SettingsSectionFooter(L("menu_bar_layout_footer"))
+                }
+
+                Section {
+                    Toggle(isOn: self.$settings.mergeIcons) {
+                        SettingsRowLabel(L("merge_icons_title"), subtitle: L("merge_icons_subtitle"))
+                    }
+
+                    SettingsMenuPicker(
+                        selection: self.$settings.switcherRowsOption,
+                        options: MenuBarSettingsMenuOptions.switcherRows,
+                        label: { Text(L("switcher_rows_title")) },
+                        optionLabel: { option in
+                            Text(option.label)
+                        })
+                        .disabled(!self.settings.mergeIcons)
+
+                    Toggle(isOn: self.$settings.menuBarShowsHighestUsage) {
+                        SettingsRowLabel(
+                            L("show_most_used_provider_title"),
+                            subtitle: L("show_most_used_provider_subtitle"))
+                    }
                     .disabled(!self.settings.mergeIcons)
 
-                Toggle(isOn: self.$settings.menuBarShowsHighestUsage) {
-                    SettingsRowLabel(
-                        L("show_most_used_provider_title"),
-                        subtitle: L("show_most_used_provider_subtitle"))
+                    self.overviewProviderRow
+                        .disabled(!self.settings.mergeIcons)
+                } header: {
+                    Text(L("section_combined_icon"))
                 }
-                .disabled(!self.settings.mergeIcons)
 
-                self.overviewProviderRow
-                    .disabled(!self.settings.mergeIcons)
-            } header: {
-                Text(L("section_combined_icon"))
-            }
-
-            Section {
-                Toggle(isOn: self.$settings.randomBlinkEnabled) {
-                    SettingsRowLabel(L("surprise_me_title"), subtitle: L("surprise_me_subtitle"))
+                Section {
+                    Toggle(isOn: self.$settings.randomBlinkEnabled) {
+                        SettingsRowLabel(L("surprise_me_title"), subtitle: L("surprise_me_subtitle"))
+                    }
+                } header: {
+                    Text(L("section_animation"))
                 }
-            } header: {
-                Text(L("section_animation"))
             }
-        }
-        .formStyle(.grouped)
-        .toggleStyle(.switch)
-        .scrollContentBackground(.hidden)
-        .onAppear {
-            self.reconcileOverviewSelection()
-        }
-        .onChange(of: self.settings.mergeIcons) { _, isEnabled in
-            guard isEnabled else {
-                self.isOverviewProviderPopoverPresented = false
-                return
+            .codexbarGroupedFormStyle()
+            .toggleStyle(.switch)
+            .codexbarScrollContentBackgroundHidden()
+            .onAppear {
+                self.reconcileOverviewSelection()
             }
-            self.reconcileOverviewSelection()
-        }
-        .onChange(of: self.activeProvidersInOrder) { _, _ in
-            if self.activeProvidersInOrder.isEmpty {
-                self.isOverviewProviderPopoverPresented = false
+            .onChange(of: self.settings.mergeIcons) { isEnabled in
+                guard isEnabled else {
+                    self.isOverviewProviderPopoverPresented = false
+                    return
+                }
+                self.reconcileOverviewSelection()
             }
-            self.reconcileOverviewSelection()
+            .onChange(of: self.activeProvidersInOrder) { _ in
+                if self.activeProvidersInOrder.isEmpty {
+                    self.isOverviewProviderPopoverPresented = false
+                }
+                self.reconcileOverviewSelection()
+            }
+
         }
+
     }
 
     private var overviewProviderRow: some View {
-        LabeledContent {
+        CodexBarLabeledContent {
             if self.showsOverviewConfigureButton {
                 Button(L("configure")) {
                     self.isOverviewProviderPopoverPresented = true

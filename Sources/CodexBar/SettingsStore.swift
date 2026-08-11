@@ -1,6 +1,6 @@
 import AppKit
 import CodexBarCore
-import Observation
+import Perception
 import ServiceManagement
 
 enum RefreshFrequency: String, CaseIterable, Identifiable {
@@ -185,7 +185,7 @@ enum CodexAccountMenuProjectionRevalidationResult: Equatable {
 }
 
 @MainActor
-@Observable
+@Perceptible
 final class SettingsStore {
     static let sharedDefaults = AppGroupSupport.sharedDefaults()
     static let mergedOverviewProviderLimit = 6
@@ -208,24 +208,24 @@ final class SettingsStore {
     static var codexAccountReconciliationSnapshotCacheIntervalOverrideForTesting: TimeInterval?
     #endif
 
-    @ObservationIgnored let userDefaults: UserDefaults
-    @ObservationIgnored let configStore: CodexBarConfigStore
-    @ObservationIgnored let antigravityOAuthCredentialsStore: AntigravityOAuthCredentialsStore
-    @ObservationIgnored var config: CodexBarConfig
-    @ObservationIgnored var configPersistTask: Task<Void, Never>?
-    @ObservationIgnored var configFileWatcher: ConfigFileWatcher?
-    @ObservationIgnored var configLoading = false
-    @ObservationIgnored var tokenAccountsLoaded = false
-    @ObservationIgnored var cachedCodexAccountReconciliationSnapshot:
+    @PerceptionIgnored let userDefaults: UserDefaults
+    @PerceptionIgnored let configStore: CodexBarConfigStore
+    @PerceptionIgnored let antigravityOAuthCredentialsStore: AntigravityOAuthCredentialsStore
+    @PerceptionIgnored var config: CodexBarConfig
+    @PerceptionIgnored var configPersistTask: Task<Void, Never>?
+    @PerceptionIgnored var configFileWatcher: ConfigFileWatcher?
+    @PerceptionIgnored var configLoading = false
+    @PerceptionIgnored var tokenAccountsLoaded = false
+    @PerceptionIgnored var cachedCodexAccountReconciliationSnapshot:
         CachedCodexAccountReconciliationSnapshot?
-    @ObservationIgnored var cachedCodexAccountMenuProjection: CachedCodexAccountMenuProjection?
-    @ObservationIgnored var codexAccountReconciliationGeneration: UInt = 0
+    @PerceptionIgnored var cachedCodexAccountMenuProjection: CachedCodexAccountMenuProjection?
+    @PerceptionIgnored var codexAccountReconciliationGeneration: UInt = 0
     #if DEBUG
-    @ObservationIgnored var _test_codexAccountSnapshotLoader:
+    @PerceptionIgnored var _test_codexAccountSnapshotLoader:
         (@Sendable (CodexActiveSource) -> CodexAccountReconciliationSnapshot)?
     #endif
-    @ObservationIgnored var mergedMenuLastSelectedWasOverviewStorage = false
-    @ObservationIgnored var selectedMenuProviderRawStorage: String?
+    @PerceptionIgnored var mergedMenuLastSelectedWasOverviewStorage = false
+    @PerceptionIgnored var selectedMenuProviderRawStorage: String?
     var defaultsState: SettingsDefaultsState
     var configRevision: Int = 0
     var providerDetailSettingsRevision: Int = 0
@@ -233,9 +233,9 @@ final class SettingsStore {
     var costUsageSettingsRevision: UInt64 = 0
     var providerOrder: [ProviderInstanceID] = []
     var providerEnablement: [ProviderInstanceID: Bool] = [:]
-    @ObservationIgnored var providerEnablementRevisions: [ProviderInstanceID: UInt64] = [:]
-    @ObservationIgnored var providerConfigRevisions: [ProviderInstanceID: UInt64] = [:]
-    @ObservationIgnored var providerConfigFingerprints: [ProviderInstanceID: Data] = [:]
+    @PerceptionIgnored var providerEnablementRevisions: [ProviderInstanceID: UInt64] = [:]
+    @PerceptionIgnored var providerConfigRevisions: [ProviderInstanceID: UInt64] = [:]
+    @PerceptionIgnored var providerConfigFingerprints: [ProviderInstanceID: Data] = [:]
 
     static func shouldBridgeSharedDefaults(for userDefaults: UserDefaults) -> Bool {
         if !self.isRunningTests {

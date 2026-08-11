@@ -26,6 +26,15 @@ struct CreditsHistoryChartMenuView: View {
     }
 
     var body: some View {
+        if #available(macOS 13, *) {
+            self.chartBody
+        } else {
+            self.macOS12Fallback
+        }
+    }
+
+    @available(macOS 13, *)
+    private var chartBody: some View {
         let model = Self.makeModel(from: self.breakdown)
         VStack(alignment: .leading, spacing: 10) {
             if model.points.isEmpty {
@@ -111,6 +120,17 @@ struct CreditsHistoryChartMenuView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .frame(minWidth: self.width, maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var macOS12Fallback: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L("Spend unavailable"))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -219,6 +239,7 @@ struct CreditsHistoryChartMenuView: View {
         return model.pointsByDayKey[key]
     }
 
+    @available(macOS 13, *)
     private func selectionBandRect(model: Model, proxy: ChartProxy, geo: GeometryProxy) -> CGRect? {
         guard let key = self.selectedDayKey else { return nil }
         guard let plotAnchor = proxy.plotFrame else { return nil }
@@ -246,6 +267,7 @@ struct CreditsHistoryChartMenuView: View {
         return CGRect(x: left, y: plotFrame.origin.y, width: right - left, height: plotFrame.height)
     }
 
+    @available(macOS 13, *)
     private func updateSelection(
         location: CGPoint?,
         model: Model,

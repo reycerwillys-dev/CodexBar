@@ -43,6 +43,15 @@ struct UsageBreakdownChartMenuView: View {
     }
 
     var body: some View {
+        if #available(macOS 13, *) {
+            self.chartBody
+        } else {
+            self.macOS12Fallback
+        }
+    }
+
+    @available(macOS 13, *)
+    private var chartBody: some View {
         let summary = OpenAIDashboardDailyBreakdown.recentUsageSummary(
             from: self.breakdown,
             now: self.now,
@@ -163,6 +172,17 @@ struct UsageBreakdownChartMenuView: View {
                     }
                 }
             }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .frame(minWidth: self.width, maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var macOS12Fallback: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L("Spend unavailable"))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -354,6 +374,7 @@ struct UsageBreakdownChartMenuView: View {
         return comps.date
     }
 
+    @available(macOS 13, *)
     private func selectionBandRect(model: Model, proxy: ChartProxy, geo: GeometryProxy) -> CGRect? {
         guard let key = self.selectedDayKey else { return nil }
         guard let plotAnchor = proxy.plotFrame else { return nil }
@@ -381,6 +402,7 @@ struct UsageBreakdownChartMenuView: View {
         return CGRect(x: left, y: plotFrame.origin.y, width: right - left, height: plotFrame.height)
     }
 
+    @available(macOS 13, *)
     private func updateSelection(
         location: CGPoint?,
         model: Model,

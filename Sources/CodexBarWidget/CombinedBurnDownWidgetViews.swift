@@ -21,9 +21,7 @@ struct CombinedBurnDownWidgetView: View {
                 self.emptyState
             }
         }
-        .containerBackground(for: .widget) {
-            BurnWidgetBackground()
-        }
+        .background(BurnWidgetBackground())
     }
 
     private var emptyState: some View {

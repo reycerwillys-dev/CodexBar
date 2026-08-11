@@ -1,7 +1,7 @@
 import CodexBarCore
 import CryptoKit
 import Foundation
-import Observation
+import Perception
 
 struct SpendDashboardConfiguration: Equatable, Sendable {
     let costUsageEnabled: Bool
@@ -704,7 +704,7 @@ private struct SpendDashboardSnapshotRevisionEncoder {
 }
 
 @MainActor
-@Observable
+@Perceptible
 final class SpendDashboardController {
     typealias RequestBuilder = @MainActor @Sendable (SpendDashboardRequestBuildMode) async
         -> SpendDashboardLoadRequest
@@ -764,7 +764,7 @@ final class SpendDashboardController {
         }
 
         var confirmedNonemptyInputs: [SpendDashboardModel.ProviderInput] {
-            self.observations.sorted { $0.key < $1.key }.compactMap { _, observation in
+            self.observations.sorted { $0.key < $1.key }.compactMap { observation in
                 guard case let .confirmedNonempty(input) = observation else { return nil }
                 return input
             }

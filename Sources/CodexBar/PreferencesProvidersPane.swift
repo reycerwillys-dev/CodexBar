@@ -1,6 +1,7 @@
 import AppKit
 import CodexBarCore
 import SwiftUI
+import Perception
 
 @MainActor
 enum ProviderSettingsRefreshInteraction {
@@ -16,8 +17,8 @@ enum ProviderSettingsRefreshInteraction {
 @MainActor
 struct ProvidersPane: View {
     let provider: UsageProvider
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
+    @Perception.Bindable var settings: SettingsStore
+    @Perception.Bindable var store: UsageStore
     let managedCodexAccountCoordinator: ManagedCodexAccountCoordinator
     let codexAccountPromotionCoordinator: CodexAccountPromotionCoordinator
     let codexAmbientLoginRunner: any CodexAmbientLoginRunning
@@ -53,81 +54,86 @@ struct ProvidersPane: View {
     }
 
     var body: some View {
-        ProviderDetailView(
-            provider: self.provider,
-            store: self.store,
-            isEnabled: self.binding(for: self.provider),
-            subtitle: self.providerSubtitle(self.provider),
-            model: self.menuCardModel(for: self.provider),
-            openAIWebDiagnostic: self.openAIWebDiagnostic(for: self.provider),
-            settingsPickers: self.extraSettingsPickers(for: self.provider),
-            settingsToggles: self.extraSettingsToggles(for: self.provider),
-            settingsFields: self.extraSettingsFields(for: self.provider),
-            settingsActions: self.extraSettingsActions(for: self.provider),
-            settingsTokenAccounts: self.tokenAccountDescriptor(for: self.provider),
-            settingsOrganizations: self.extraSettingsOrganizations(for: self.provider),
-            errorDisplay: self.providerErrorDisplay(self.provider),
-            isErrorExpanded: self.expandedBinding(for: self.provider),
-            onCopyError: { text in self.copyToPasteboard(text) },
-            onRefresh: {
-                self.triggerRefresh(for: self.provider)
-            },
-            showsSupplementarySettingsContent: self.codexAccountsSectionState(for: self.provider) != nil,
-            supplementarySettingsContent: {
-                if let state = self.codexAccountsSectionState(for: self.provider) {
-                    CodexAccountsSectionView(
-                        state: state,
-                        setActiveVisibleAccount: { visibleAccountID in
-                            Task { @MainActor in
-                                await self.selectCodexVisibleAccount(id: visibleAccountID)
-                            }
-                        },
-                        reauthenticateAccount: { account in
-                            Task { @MainActor in
-                                await self.reauthenticateCodexAccount(account)
-                            }
-                        },
-                        removeAccount: { account in
-                            self.requestManagedCodexAccountRemoval(account)
-                        },
-                        requestSystemVisibleAccount: { visibleAccountID in
-                            Task { @MainActor in
-                                await self.requestCodexSystemVisibleAccount(id: visibleAccountID)
-                            }
-                        },
-                        addAccount: {
-                            Task { @MainActor in
-                                await self.addManagedCodexAccount()
-                            }
-                        })
-                }
-            })
-            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-                self.runSettingsDidBecomeActiveHooks()
-            }
-            .alert(
-                self.activeConfirmation?.title ?? "",
-                isPresented: Binding(
-                    get: { self.activeConfirmation != nil },
-                    set: { isPresented in
-                        if !isPresented {
-                            self.activeConfirmation = nil
-                        }
-                    }),
-                actions: {
-                    if let active = self.activeConfirmation {
-                        Button(active.confirmTitle) {
-                            active.onConfirm()
-                            self.activeConfirmation = nil
-                        }
-                        Button(L("cancel"), role: .cancel) { self.activeConfirmation = nil }
-                    }
+
+        WithPerceptionTracking {
+            ProviderDetailView(
+                provider: self.provider,
+                store: self.store,
+                isEnabled: self.binding(for: self.provider),
+                subtitle: self.providerSubtitle(self.provider),
+                model: self.menuCardModel(for: self.provider),
+                openAIWebDiagnostic: self.openAIWebDiagnostic(for: self.provider),
+                settingsPickers: self.extraSettingsPickers(for: self.provider),
+                settingsToggles: self.extraSettingsToggles(for: self.provider),
+                settingsFields: self.extraSettingsFields(for: self.provider),
+                settingsActions: self.extraSettingsActions(for: self.provider),
+                settingsTokenAccounts: self.tokenAccountDescriptor(for: self.provider),
+                settingsOrganizations: self.extraSettingsOrganizations(for: self.provider),
+                errorDisplay: self.providerErrorDisplay(self.provider),
+                isErrorExpanded: self.expandedBinding(for: self.provider),
+                onCopyError: { text in self.copyToPasteboard(text) },
+                onRefresh: {
+                    self.triggerRefresh(for: self.provider)
                 },
-                message: {
-                    if let active = self.activeConfirmation {
-                        Text(active.message)
+                showsSupplementarySettingsContent: self.codexAccountsSectionState(for: self.provider) != nil,
+                supplementarySettingsContent: {
+                    if let state = self.codexAccountsSectionState(for: self.provider) {
+                        CodexAccountsSectionView(
+                            state: state,
+                            setActiveVisibleAccount: { visibleAccountID in
+                                Task { @MainActor in
+                                    await self.selectCodexVisibleAccount(id: visibleAccountID)
+                                }
+                            },
+                            reauthenticateAccount: { account in
+                                Task { @MainActor in
+                                    await self.reauthenticateCodexAccount(account)
+                                }
+                            },
+                            removeAccount: { account in
+                                self.requestManagedCodexAccountRemoval(account)
+                            },
+                            requestSystemVisibleAccount: { visibleAccountID in
+                                Task { @MainActor in
+                                    await self.requestCodexSystemVisibleAccount(id: visibleAccountID)
+                                }
+                            },
+                            addAccount: {
+                                Task { @MainActor in
+                                    await self.addManagedCodexAccount()
+                                }
+                            })
                     }
                 })
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                    self.runSettingsDidBecomeActiveHooks()
+                }
+                .alert(
+                    self.activeConfirmation?.title ?? "",
+                    isPresented: Binding(
+                        get: { self.activeConfirmation != nil },
+                        set: { isPresented in
+                            if !isPresented {
+                                self.activeConfirmation = nil
+                            }
+                        }),
+                    actions: {
+                        if let active = self.activeConfirmation {
+                            Button(active.confirmTitle) {
+                                active.onConfirm()
+                                self.activeConfirmation = nil
+                            }
+                            Button(L("cancel"), role: .cancel) { self.activeConfirmation = nil }
+                        }
+                    },
+                    message: {
+                        if let active = self.activeConfirmation {
+                            Text(active.message)
+                        }
+                    })
+
+        }
+
     }
 
     static func filteredProviders(

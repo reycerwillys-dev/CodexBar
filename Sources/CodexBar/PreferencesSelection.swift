@@ -1,6 +1,6 @@
 import CodexBarCore
 import Foundation
-import Observation
+import Perception
 
 extension SettingsPane {
     /// Stable token used to remember the selected pane across launches.
@@ -51,7 +51,7 @@ extension SettingsPane {
 }
 
 @MainActor
-@Observable
+@Perceptible
 final class PreferencesSelection {
     static let paneDefaultsKey = "settingsSelectedPane"
 

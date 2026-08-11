@@ -50,7 +50,7 @@ struct ProviderSettingsToggleRowView: View {
             }
         }
         .disabled(!isEnabled)
-        .onChange(of: self.toggle.binding.wrappedValue) { _, enabled in
+        .onChange(of: self.toggle.binding.wrappedValue) { enabled in
             guard let onChange = self.toggle.onChange else { return }
             Task { @MainActor in
                 await onChange(enabled)
@@ -72,7 +72,7 @@ struct ProviderSettingsPickerRowView: View {
         let isEnabled = self.picker.isEnabled?() ?? true
         let subtitle = self.picker.dynamicSubtitle?() ?? self.picker.subtitle
         let trimmedSubtitle = subtitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        LabeledContent {
+        CodexBarLabeledContent {
             HStack(spacing: 8) {
                 if let trailingText = self.picker.trailingText?(), !trailingText.isEmpty {
                     Text(trailingText)
@@ -108,7 +108,7 @@ struct ProviderSettingsPickerRowView: View {
                 subtitle: trimmedSubtitle.isEmpty ? nil : L(trimmedSubtitle))
         }
         .disabled(!isEnabled)
-        .onChange(of: self.picker.binding.wrappedValue) { _, selection in
+        .onChange(of: self.picker.binding.wrappedValue) { selection in
             guard let onChange = self.picker.onChange else { return }
             Task { @MainActor in
                 await onChange(selection)

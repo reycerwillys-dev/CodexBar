@@ -2,6 +2,7 @@ import AppKit
 import Charts
 import CodexBarCore
 import SwiftUI
+import Perception
 
 func spendDashboardDayRangeText(_ days: Int) -> String {
     let template: String
@@ -62,8 +63,8 @@ func spendDashboardModelHistoryPresentation(
 
 @MainActor
 struct SpendDashboardPane: View {
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
+    @Perception.Bindable var settings: SettingsStore
+    @Perception.Bindable var store: UsageStore
     @State private var controller: SpendDashboardController
     @State private var isVisible = false
 
@@ -78,49 +79,54 @@ struct SpendDashboardPane: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                self.header
-                self.codexCostCatchUpPanel
-                self.content
-                self.provenance
-                self.shareAction
+
+        WithPerceptionTracking {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    self.header
+                    self.codexCostCatchUpPanel
+                    self.content
+                    self.provenance
+                    self.shareAction
+                }
+                .padding(24)
             }
-            .padding(24)
-        }
-        .background(FocusResigningBackground())
-        .onAppear {
-            self.isVisible = true
-            self.controller.refreshDateWindow()
-            self.controller.update(configuration: self.configuration)
-            if !self.controller.isRefreshing {
-                self.synchronizeCodexCostCatchUp()
+            .background(FocusResigningBackground())
+            .onAppear {
+                self.isVisible = true
+                self.controller.refreshDateWindow()
+                self.controller.update(configuration: self.configuration)
+                if !self.controller.isRefreshing {
+                    self.synchronizeCodexCostCatchUp()
+                }
             }
-        }
-        .onChange(of: self.configuration) { _, configuration in
-            self.controller.update(configuration: configuration)
-            if self.isVisible, !self.controller.isRefreshing {
-                self.synchronizeCodexCostCatchUp()
+            .onChange(of: self.configuration) { configuration in
+                self.controller.update(configuration: configuration)
+                if self.isVisible, !self.controller.isRefreshing {
+                    self.synchronizeCodexCostCatchUp()
+                }
             }
-        }
-        .onChange(of: self.controller.isRefreshing) { _, isRefreshing in
-            if self.isVisible, !isRefreshing {
-                self.synchronizeCodexCostCatchUp()
+            .onChange(of: self.controller.isRefreshing) { isRefreshing in
+                if self.isVisible, !isRefreshing {
+                    self.synchronizeCodexCostCatchUp()
+                }
             }
+            .onDisappear {
+                self.isVisible = false
+                self.controller.stop()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
+                self.controller.refreshDateWindow()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .NSSystemTimeZoneDidChange)) { _ in
+                self.controller.refreshDateWindow()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                self.controller.refreshDateWindow()
+            }
+
         }
-        .onDisappear {
-            self.isVisible = false
-            self.controller.stop()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
-            self.controller.refreshDateWindow()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .NSSystemTimeZoneDidChange)) { _ in
-            self.controller.refreshDateWindow()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            self.controller.refreshDateWindow()
-        }
+
     }
 
     private var configuration: SpendDashboardConfiguration {
@@ -287,7 +293,7 @@ struct SpendDashboardPane: View {
     private var content: some View {
         if !self.settings.costUsageEnabled {
             SpendDashboardPanel {
-                ContentUnavailableView {
+                CodexBarContentUnavailableView {
                     Label(L("Cost tracking is off"), systemImage: "chart.bar.xaxis")
                 } description: {
                     Text(L("Turn on Track costs to build local estimates."))
@@ -297,7 +303,7 @@ struct SpendDashboardPane: View {
         } else if self.controller.model.groups.isEmpty {
             let emptyState = SpendDashboardEmptyState.make(isRefreshing: self.controller.isRefreshing)
             SpendDashboardPanel {
-                ContentUnavailableView {
+                CodexBarContentUnavailableView {
                     Label(emptyState.title, systemImage: "chart.bar.xaxis")
                 } description: {
                     Text(emptyState.message)
@@ -413,47 +419,52 @@ private struct SpendCurrencySection: View {
     let requestedDays: Int
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(self.group.currencyCode)
-                    .font(.headline)
-                Spacer()
-                Text(self.group.totalCost.map {
-                    UsageFormatter.currencyString($0, currencyCode: self.group.currencyCode)
-                } ?? L("Spend unavailable"))
-                    .font(.title3.weight(.semibold))
-                    .monospacedDigit()
-            }
 
-            Text(
-                "\(L("Local estimated history")) · " +
-                    spendDashboardCoverageText(
-                        covered: self.group.coveredDayCount,
-                        requested: self.requestedDays))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            SpendDashboardPanel {
-                HStack(spacing: 24) {
-                    SpendSummaryValue(
-                        title: L("Estimated spend"),
-                        value: self.group.totalCost.map {
-                            UsageFormatter.currencyString($0, currencyCode: self.group.currencyCode)
-                        } ?? "—")
-                    SpendSummaryValue(
-                        title: L("Tracked tokens"),
-                        value: self.group.totalTokens.map(UsageFormatter.tokenCountString) ?? "—")
-                    SpendSummaryValue(
-                        title: L("Subscriptions"),
-                        value: codexBarLocalizedInteger(self.group.providers.count))
+        WithPerceptionTracking {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(self.group.currencyCode)
+                        .font(.headline)
                     Spacer()
+                    Text(self.group.totalCost.map {
+                        UsageFormatter.currencyString($0, currencyCode: self.group.currencyCode)
+                    } ?? L("Spend unavailable"))
+                        .font(.title3.weight(.semibold))
+                        .monospacedDigit()
                 }
+
+                Text(
+                    "\(L("Local estimated history")) · " +
+                        spendDashboardCoverageText(
+                            covered: self.group.coveredDayCount,
+                            requested: self.requestedDays))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                SpendDashboardPanel {
+                    HStack(spacing: 24) {
+                        SpendSummaryValue(
+                            title: L("Estimated spend"),
+                            value: self.group.totalCost.map {
+                                UsageFormatter.currencyString($0, currencyCode: self.group.currencyCode)
+                            } ?? "—")
+                        SpendSummaryValue(
+                            title: L("Tracked tokens"),
+                            value: self.group.totalTokens.map(UsageFormatter.tokenCountString) ?? "—")
+                        SpendSummaryValue(
+                            title: L("Subscriptions"),
+                            value: codexBarLocalizedInteger(self.group.providers.count))
+                        Spacer()
+                    }
+                }
+
+                SpendProviderPanel(group: self.group)
+                SpendModelPanel(group: self.group)
+                SpendDailyChart(group: self.group)
             }
 
-            SpendProviderPanel(group: self.group)
-            SpendModelPanel(group: self.group)
-            SpendDailyChart(group: self.group)
         }
+
     }
 }
 
@@ -462,14 +473,19 @@ private struct SpendSummaryValue: View {
     let value: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(self.title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(self.value)
-                .font(.system(.title2, design: .rounded, weight: .semibold))
-                .monospacedDigit()
+
+        WithPerceptionTracking {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(self.title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(self.value)
+                    .font(.system(.title2, design: .rounded, weight: .semibold))
+                    .monospacedDigit()
+            }
+
         }
+
     }
 }
 
@@ -477,31 +493,36 @@ private struct SpendProviderPanel: View {
     let group: SpendDashboardModel.CurrencyGroup
 
     var body: some View {
-        SpendDashboardPanel {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(L("By subscription")).font(.headline).padding(.bottom, 8)
-                ForEach(self.group.providers) { row in
-                    if row.rank > 1 {
-                        Divider()
+
+        WithPerceptionTracking {
+            SpendDashboardPanel {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(L("By subscription")).font(.headline).padding(.bottom, 8)
+                    ForEach(self.group.providers) { row in
+                        if row.rank > 1 {
+                            Divider()
+                        }
+                        HStack(spacing: 10) {
+                            Text(spendDashboardRankText(row.rank))
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.tertiary)
+                                .frame(width: 26, alignment: .leading)
+                            SpendProviderIcon(provider: row.provider)
+                            Text(row.displayName).lineLimit(1)
+                            Spacer()
+                            Text(row.totalCost.map {
+                                UsageFormatter.currencyString($0, currencyCode: self.group.currencyCode)
+                            } ?? L("Spend unavailable"))
+                                .foregroundStyle(row.totalCost == nil ? .secondary : .primary)
+                                .monospacedDigit()
+                        }
+                        .padding(.vertical, 9)
                     }
-                    HStack(spacing: 10) {
-                        Text(spendDashboardRankText(row.rank))
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.tertiary)
-                            .frame(width: 26, alignment: .leading)
-                        SpendProviderIcon(provider: row.provider)
-                        Text(row.displayName).lineLimit(1)
-                        Spacer()
-                        Text(row.totalCost.map {
-                            UsageFormatter.currencyString($0, currencyCode: self.group.currencyCode)
-                        } ?? L("Spend unavailable"))
-                            .foregroundStyle(row.totalCost == nil ? .secondary : .primary)
-                            .monospacedDigit()
-                    }
-                    .padding(.vertical, 9)
                 }
             }
+
         }
+
     }
 }
 
@@ -509,58 +530,63 @@ private struct SpendModelPanel: View {
     let group: SpendDashboardModel.CurrencyGroup
 
     var body: some View {
-        SpendDashboardPanel {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(L("Models")).font(.headline).padding(.bottom, 8)
-                let presentation = spendDashboardModelHistoryPresentation(self.group)
-                switch presentation {
-                case .unavailable:
-                    Text(L("Model breakdown unavailable"))
-                        .foregroundStyle(.secondary)
-                        .padding(.vertical, 10)
-                case .empty:
-                    Text(L("No model-level history"))
-                        .foregroundStyle(.secondary)
-                        .padding(.vertical, 10)
-                case .partial, .complete:
-                    if presentation == .partial {
-                        Label(L("Model breakdown unavailable"), systemImage: "exclamationmark.triangle")
-                            .font(.caption)
+
+        WithPerceptionTracking {
+            SpendDashboardPanel {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(L("Models")).font(.headline).padding(.bottom, 8)
+                    let presentation = spendDashboardModelHistoryPresentation(self.group)
+                    switch presentation {
+                    case .unavailable:
+                        Text(L("Model breakdown unavailable"))
                             .foregroundStyle(.secondary)
-                            .padding(.bottom, 6)
-                    }
-                    ForEach(self.group.models.prefix(8)) { row in
-                        if row.rank > 1 {
-                            Divider()
+                            .padding(.vertical, 10)
+                    case .empty:
+                        Text(L("No model-level history"))
+                            .foregroundStyle(.secondary)
+                            .padding(.vertical, 10)
+                    case .partial, .complete:
+                        if presentation == .partial {
+                            Label(L("Model breakdown unavailable"), systemImage: "exclamationmark.triangle")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.bottom, 6)
                         }
-                        HStack(spacing: 10) {
-                            if presentation == .complete {
-                                Text(spendDashboardRankText(row.rank))
-                                    .font(.caption.monospacedDigit())
-                                    .foregroundStyle(.tertiary)
-                                    .frame(width: 26, alignment: .leading)
-                            } else {
-                                Image(systemName: "circle.dashed")
-                                    .font(.caption)
-                                    .foregroundStyle(.tertiary)
-                                    .frame(width: 26, alignment: .leading)
+                        ForEach(self.group.models.prefix(8)) { row in
+                            if row.rank > 1 {
+                                Divider()
                             }
-                            SpendProviderIcon(provider: row.provider)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(row.modelName).lineLimit(1)
-                                Text(row.providerName).font(.caption).foregroundStyle(.secondary)
+                            HStack(spacing: 10) {
+                                if presentation == .complete {
+                                    Text(spendDashboardRankText(row.rank))
+                                        .font(.caption.monospacedDigit())
+                                        .foregroundStyle(.tertiary)
+                                        .frame(width: 26, alignment: .leading)
+                                } else {
+                                    Image(systemName: "circle.dashed")
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
+                                        .frame(width: 26, alignment: .leading)
+                                }
+                                SpendProviderIcon(provider: row.provider)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(row.modelName).lineLimit(1)
+                                    Text(row.providerName).font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Text(row.totalCost.map {
+                                    UsageFormatter.currencyString($0, currencyCode: self.group.currencyCode)
+                                } ?? "—")
+                                    .monospacedDigit()
                             }
-                            Spacer()
-                            Text(row.totalCost.map {
-                                UsageFormatter.currencyString($0, currencyCode: self.group.currencyCode)
-                            } ?? "—")
-                                .monospacedDigit()
+                            .padding(.vertical, 9)
                         }
-                        .padding(.vertical, 9)
                     }
                 }
             }
+
         }
+
     }
 }
 
@@ -599,51 +625,63 @@ private struct SpendDailyChart: View {
     let group: SpendDashboardModel.CurrencyGroup
 
     var body: some View {
-        let presentation = SpendDailyChartPresentation(
-            dailyPoints: self.group.dailyPoints,
-            aggregateTotal: self.group.totalCost)
-        SpendDashboardPanel {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(L("Daily estimated spend")).font(.headline)
-                if presentation.content == .unavailable {
-                    ContentUnavailableView(L("Spend unavailable"), systemImage: "chart.bar.xaxis")
-                        .frame(maxWidth: .infinity, minHeight: 170)
-                } else {
-                    Chart(self.group.dailyPoints) { point in
-                        BarMark(
-                            x: .value(L("Day"), point.day, unit: .day),
-                            yStart: .value(L("Estimated spend"), point.stackStart),
-                            yEnd: .value(L("Estimated spend"), point.stackEnd),
-                            width: .ratio(0.72))
-                            .foregroundStyle(by: .value(L("Provider"), point.providerName))
-                            .accessibilityLabel(Text(self.pointAccessibilityLabel(point)))
-                            .accessibilityValue(Text(UsageFormatter.currencyString(
-                                point.cost,
-                                currencyCode: self.group.currencyCode)))
-                    }
-                    .chartXScale(domain: self.group.chartDomain)
-                    .chartForegroundStyleScale(
-                        domain: presentation.series.map(\.name),
-                        range: presentation.series.map { self.providerColor($0.provider) })
-                    .chartLegend(position: .bottom, alignment: .leading, spacing: 8)
-                    .chartYAxis {
-                        AxisMarks(position: .leading) { value in
-                            AxisGridLine()
-                            AxisValueLabel {
-                                if let amount = value.as(Double.self) {
-                                    Text(UsageFormatter.compactCurrencyString(
-                                        amount,
-                                        currencyCode: self.group.currencyCode))
+
+        WithPerceptionTracking {
+            let presentation = SpendDailyChartPresentation(
+                dailyPoints: self.group.dailyPoints,
+                aggregateTotal: self.group.totalCost)
+            SpendDashboardPanel {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(L("Daily estimated spend")).font(.headline)
+                    if presentation.content == .unavailable {
+                        CodexBarContentUnavailableTitleView(
+                            title: L("Spend unavailable"),
+                            systemImage: "chart.bar.xaxis")
+                            .frame(maxWidth: .infinity, minHeight: 170)
+                    } else if #available(macOS 13, *) {
+                        Chart(self.group.dailyPoints) { point in
+                            BarMark(
+                                x: .value(L("Day"), point.day, unit: .day),
+                                yStart: .value(L("Estimated spend"), point.stackStart),
+                                yEnd: .value(L("Estimated spend"), point.stackEnd),
+                                width: .ratio(0.72))
+                                .foregroundStyle(by: .value(L("Provider"), point.providerName))
+                                .accessibilityLabel(Text(self.pointAccessibilityLabel(point)))
+                                .accessibilityValue(Text(UsageFormatter.currencyString(
+                                    point.cost,
+                                    currencyCode: self.group.currencyCode)))
+                        }
+                        .chartXScale(domain: self.group.chartDomain)
+                        .chartForegroundStyleScale(
+                            domain: presentation.series.map(\.name),
+                            range: presentation.series.map { self.providerColor($0.provider) })
+                        .chartLegend(position: .bottom, alignment: .leading, spacing: 8)
+                        .chartYAxis {
+                            AxisMarks(position: .leading) { value in
+                                AxisGridLine()
+                                AxisValueLabel {
+                                    if let amount = value.as(Double.self) {
+                                        Text(UsageFormatter.compactCurrencyString(
+                                            amount,
+                                            currencyCode: self.group.currencyCode))
+                                    }
                                 }
                             }
                         }
+                        .frame(height: 170)
+                        .accessibilityLabel(L("Daily estimated spend"))
+                        .accessibilityValue(presentation.accessibilityValue)
+                    } else {
+                        CodexBarContentUnavailableTitleView(
+                            title: L("Spend unavailable"),
+                            systemImage: "chart.bar.xaxis")
+                            .frame(maxWidth: .infinity, minHeight: 170)
                     }
-                    .frame(height: 170)
-                    .accessibilityLabel(L("Daily estimated spend"))
-                    .accessibilityValue(presentation.accessibilityValue)
                 }
             }
+
         }
+
     }
 
     private func pointAccessibilityLabel(_ point: SpendDashboardModel.DailyPoint) -> String {
@@ -662,15 +700,20 @@ private struct SpendProviderIcon: View {
     let provider: UsageProvider
 
     var body: some View {
-        Group {
-            if let icon = ProviderBrandIcon.image(for: self.provider) {
-                Image(nsImage: icon).resizable().scaledToFit()
-            } else {
-                Image(systemName: "circle.dotted")
+
+        WithPerceptionTracking {
+            Group {
+                if let icon = ProviderBrandIcon.image(for: self.provider) {
+                    Image(nsImage: icon).resizable().scaledToFit()
+                } else {
+                    Image(systemName: "circle.dotted")
+                }
             }
+            .frame(width: 20, height: 20)
+            .accessibilityHidden(true)
+
         }
-        .frame(width: 20, height: 20)
-        .accessibilityHidden(true)
+
     }
 }
 
@@ -678,12 +721,17 @@ private struct SpendDashboardPanel<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        self.content
-            .padding(16)
-            .background(.quaternary.opacity(0.55), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Color(nsColor: .separatorColor).opacity(0.35))
-            }
+
+        WithPerceptionTracking {
+            self.content
+                .padding(16)
+                .background(.quaternary.opacity(0.55), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Color(nsColor: .separatorColor).opacity(0.35))
+                }
+
+        }
+
     }
 }

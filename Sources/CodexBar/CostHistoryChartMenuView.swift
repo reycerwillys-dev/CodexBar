@@ -75,6 +75,15 @@ struct CostHistoryChartMenuView: View {
     }
 
     var body: some View {
+        if #available(macOS 13, *) {
+            self.chartBody
+        } else {
+            self.macOS12Fallback
+        }
+    }
+
+    @available(macOS 13, *)
+    private var chartBody: some View {
         let model = Self.makeModel(provider: self.provider, daily: self.daily)
         let selectedDateKey = self.selectedDateKey ?? Self.defaultSelectedDateKey(model: model)
         VStack(alignment: .leading, spacing: Self.outerSpacing) {
@@ -208,8 +217,8 @@ struct CostHistoryChartMenuView: View {
                                 }
                             }
                         }
-                        .scrollIndicators(
-                            Self.detailRowsNeedScrolling(itemCount: detail.rows.count) ? .visible : .hidden)
+                        .codexbarScrollIndicators(
+                            shows: Self.detailRowsNeedScrolling(itemCount: detail.rows.count))
                         .frame(
                             height: Self.detailRowsViewportHeight(
                                 rowCount: model.detailViewportRowCount,
@@ -299,6 +308,22 @@ struct CostHistoryChartMenuView: View {
         .frame(minWidth: self.width, maxWidth: .infinity, alignment: .top)
     }
 
+    private var macOS12Fallback: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L("Spend unavailable"))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            if let total = self.totalCostUSD {
+                Text(self.costString(total))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, Self.verticalPadding)
+        .frame(minWidth: self.width, maxWidth: .infinity, alignment: .topLeading)
+    }
+
     static func estimateDisclaimer(provider: UsageProvider) -> String? {
         guard let hint = ProviderDescriptorRegistry.descriptor(for: provider).tokenCost.chartEstimateDisclaimer else {
             return nil
@@ -370,7 +395,7 @@ struct CostHistoryChartMenuView: View {
                     }
                 }
             }
-            .scrollIndicators(self.sessions.count > visibleCount ? .visible : .hidden)
+            .codexbarScrollIndicators(shows: self.sessions.count > visibleCount)
             .frame(
                 height: CGFloat(visibleCount) * Self.sessionRowHeight
                     + CGFloat(max(visibleCount - 1, 0)) * Self.sessionRowSpacing,
@@ -633,6 +658,7 @@ struct CostHistoryChartMenuView: View {
         model.dateKeys.last?.key
     }
 
+    @available(macOS 13, *)
     private func selectionBandRect(model: Model, proxy: ChartProxy, geo: GeometryProxy) -> CGRect? {
         guard let key = self.selectedDateKey else { return nil }
         guard let plotAnchor = proxy.plotFrame else { return nil }
@@ -651,6 +677,7 @@ struct CostHistoryChartMenuView: View {
         return CGRect(x: left, y: plotFrame.origin.y, width: right - left, height: plotFrame.height)
     }
 
+    @available(macOS 13, *)
     private func updateSelection(
         location: CGPoint?,
         model: Model,

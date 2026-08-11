@@ -1,5 +1,5 @@
 import Foundation
-import Observation
+import Perception
 import Testing
 @testable import CodexBar
 @testable import CodexBarCore
@@ -782,7 +782,7 @@ extension UsageStoreCoverageTests {
         let store = Self.makeUsageStore(settings: settings)
         let didChange = ObservationFlag()
 
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.backgroundWorkSettingsObservationToken
         } onChange: {
             didChange.set()
@@ -793,7 +793,7 @@ extension UsageStoreCoverageTests {
         #expect(didChange.get() == false)
 
         let refreshDidChange = ObservationFlag()
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.backgroundWorkSettingsObservationToken
         } onChange: {
             refreshDidChange.set()
@@ -818,7 +818,7 @@ extension UsageStoreCoverageTests {
         let store = Self.makeUsageStore(settings: settings)
         let didChange = ObservationFlag()
 
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.backgroundWorkSettingsObservationToken
         } onChange: {
             didChange.set()
@@ -834,7 +834,7 @@ extension UsageStoreCoverageTests {
         #expect(didChange.get() == false)
 
         let refreshDidChange = ObservationFlag()
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.backgroundWorkSettingsObservationToken
         } onChange: {
             refreshDidChange.set()
@@ -845,7 +845,7 @@ extension UsageStoreCoverageTests {
         #expect(refreshDidChange.get() == true)
 
         let layoutDidChange = ObservationFlag()
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.backgroundWorkSettingsObservationToken
         } onChange: {
             layoutDidChange.set()
@@ -856,7 +856,7 @@ extension UsageStoreCoverageTests {
         #expect(layoutDidChange.get() == true)
 
         let optionalUsageDidChange = ObservationFlag()
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.backgroundWorkSettingsObservationToken
         } onChange: {
             optionalUsageDidChange.set()
@@ -883,7 +883,7 @@ extension UsageStoreCoverageTests {
         defer { store._test_providerRefreshOverride = nil }
 
         func observeBackgroundSettingsForTest() {
-            withObservationTracking {
+            withPerceptionTracking {
                 _ = store.backgroundWorkSettingsObservationToken
             } onChange: {
                 Task { @MainActor in

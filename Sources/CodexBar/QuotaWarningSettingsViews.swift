@@ -3,6 +3,7 @@ import CodexBarCore
 import AppKit
 #endif
 import SwiftUI
+import Perception
 
 struct QuotaWarningSettingsVisibility: Equatable {
     let showsThresholdControls: Bool
@@ -16,7 +17,7 @@ struct QuotaWarningSettingsVisibility: Equatable {
 
 @MainActor
 struct GlobalQuotaWarningSettingsView: View {
-    @Bindable var settings: SettingsStore
+    @Perception.Bindable var settings: SettingsStore
     let showsThresholdControls: Bool
 
     init(settings: SettingsStore, showsThresholdControls: Bool = true) {
@@ -25,32 +26,37 @@ struct GlobalQuotaWarningSettingsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if self.showsThresholdControls {
-                QuotaWarningWindowThresholdRows(settings: self.settings)
 
-                Text(L("quota_warning_global_threshold_subtitle"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        WithPerceptionTracking {
+            VStack(alignment: .leading, spacing: 10) {
+                if self.showsThresholdControls {
+                    QuotaWarningWindowThresholdRows(settings: self.settings)
 
-            Toggle(isOn: self.$settings.quotaWarningSoundEnabled) {
-                Text(L("quota_warning_sound"))
-                    .font(.footnote)
-            }
-            .toggleStyle(.checkbox)
+                    Text(L("quota_warning_global_threshold_subtitle"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
-            Toggle(isOn: self.$settings.quotaWarningOnScreenAlertEnabled) {
-                Text(L("quota_warning_onscreen_alert"))
-                    .font(.footnote)
+                Toggle(isOn: self.$settings.quotaWarningSoundEnabled) {
+                    Text(L("quota_warning_sound"))
+                        .font(.footnote)
+                }
+                .toggleStyle(.checkbox)
+
+                Toggle(isOn: self.$settings.quotaWarningOnScreenAlertEnabled) {
+                    Text(L("quota_warning_onscreen_alert"))
+                        .font(.footnote)
+                }
+                .toggleStyle(.checkbox)
             }
-            .toggleStyle(.checkbox)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 22)
+            .background(FocusResigningBackground())
+            .listRowSeparator(.hidden)
+
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.leading, 22)
-        .background(FocusResigningBackground())
-        .listRowSeparator(.hidden)
+
     }
 }
 
@@ -60,24 +66,29 @@ struct ProviderQuotaWarningSettingsView: View {
     private static let thresholdFieldWidth: CGFloat = 40
 
     let provider: UsageProvider
-    @Bindable var settings: SettingsStore
+    @Perception.Bindable var settings: SettingsStore
 
     var body: some View {
-        Section {
-            Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 8) {
-                self.windowRow(.session)
-                self.windowRow(.weekly)
+
+        WithPerceptionTracking {
+            Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    self.windowRow(.session)
+                    self.windowRow(.weekly)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .listRowSeparator(.hidden)
+                .disabled(!self.controlsEnabled)
+                .opacity(self.controlsEnabled ? 1 : 0.45)
+            } header: {
+                Text(L("quota_warnings_title"))
+            } footer: {
+                SettingsSectionFooter(self.footerText)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .listRowSeparator(.hidden)
-            .disabled(!self.controlsEnabled)
-            .opacity(self.controlsEnabled ? 1 : 0.45)
-        } header: {
-            Text(L("quota_warnings_title"))
-        } footer: {
-            SettingsSectionFooter(self.footerText)
+            .background(FocusResigningBackground())
+
         }
-        .background(FocusResigningBackground())
+
     }
 
     var controlsEnabled: Bool {
@@ -95,12 +106,11 @@ struct ProviderQuotaWarningSettingsView: View {
     }
 
     private func windowRow(_ window: QuotaWarningWindow) -> some View {
-        GridRow(alignment: .firstTextBaseline) {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(window.localizedCapitalizedDisplayName)
                 .font(.subheadline.weight(.semibold))
                 .fixedSize(horizontal: true, vertical: false)
                 .frame(minHeight: Self.windowRowMinHeight, alignment: .center)
-                .gridColumnAlignment(.leading)
 
             Picker(window.localizedCapitalizedDisplayName, selection: self.overrideModeBinding(for: window)) {
                 Text(L("quota_warning_global")).tag(ProviderQuotaWarningOverrideMode.global)
@@ -112,11 +122,9 @@ struct ProviderQuotaWarningSettingsView: View {
             .controlSize(.small)
             .fixedSize()
             .frame(minHeight: Self.windowRowMinHeight, alignment: .center)
-            .gridColumnAlignment(.leading)
 
             self.windowDetail(window)
                 .frame(minHeight: Self.windowRowMinHeight, alignment: .leading)
-                .gridColumnAlignment(.leading)
         }
     }
 
@@ -227,13 +235,15 @@ enum ProviderQuotaWarningOverrideMode: Hashable {
 
 struct FocusResigningBackground: View {
     var body: some View {
-        Color.clear
-            .contentShape(Rectangle())
-            .onTapGesture {
-                #if os(macOS)
-                NSApplication.shared.keyWindow?.makeFirstResponder(nil)
-                #endif
-            }
+        WithPerceptionTracking {
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    #if os(macOS)
+                    NSApplication.shared.keyWindow?.makeFirstResponder(nil)
+                    #endif
+                }
+        }
     }
 }
 
@@ -248,18 +258,23 @@ extension QuotaWarningWindow {
 
 @MainActor
 private struct QuotaWarningWindowThresholdRows: View {
-    @Bindable var settings: SettingsStore
+    @Perception.Bindable var settings: SettingsStore
 
     var body: some View {
-        Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 8) {
-            self.windowThresholdRow(.session)
-            self.windowThresholdRow(.weekly)
+
+        WithPerceptionTracking {
+            VStack(alignment: .leading, spacing: 8) {
+                self.windowThresholdRow(.session)
+                self.windowThresholdRow(.weekly)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+
     }
 
     private func windowThresholdRow(_ window: QuotaWarningWindow) -> some View {
-        GridRow(alignment: .firstTextBaseline) {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
             Toggle(isOn: Binding(
                 get: { self.settings.quotaWarningWindowEnabled(window) },
                 set: { self.settings.setQuotaWarningWindowEnabled(window, enabled: $0) }))
@@ -269,7 +284,6 @@ private struct QuotaWarningWindowThresholdRows: View {
                     .fixedSize(horizontal: true, vertical: false)
             }
             .toggleStyle(.checkbox)
-            .gridColumnAlignment(.leading)
 
             QuotaWarningThresholdField(
                 title: "",
@@ -279,7 +293,6 @@ private struct QuotaWarningWindowThresholdRows: View {
                 setThresholds: { self.settings.setQuotaWarningThresholds(window, thresholds: $0) })
                 .disabled(!self.settings.quotaWarningWindowEnabled(window))
                 .opacity(self.settings.quotaWarningWindowEnabled(window) ? 1 : 0.45)
-                .gridColumnAlignment(.leading)
         }
     }
 }
@@ -302,33 +315,38 @@ private struct QuotaWarningThresholdField: View {
     @FocusState private var focusedField: QuotaWarningThresholdEditorText.Field?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            self.horizontalEditor
 
-            if !self.subtitle.isEmpty {
-                Text(self.subtitle)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+        WithPerceptionTracking {
+            VStack(alignment: .leading, spacing: 7) {
+                self.horizontalEditor
+
+                if !self.subtitle.isEmpty {
+                    Text(self.subtitle)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
-        }
-        .onAppear { self.updateText(from: self.thresholds()) }
-        .onChange(of: self.focusedField) { previous, current in
-            if previous != nil, current == nil {
-                self.commit()
+            .onAppear { self.updateText(from: self.thresholds()) }
+            .onChange(of: self.focusedField) { current in
+                if current == nil {
+                    self.commit()
+                }
             }
-        }
-        .onChange(of: self.thresholds()) { _, value in
-            if self.focusedField == nil {
-                self.updateText(from: value)
+            .onChange(of: self.thresholds()) { value in
+                if self.focusedField == nil {
+                    self.updateText(from: value)
+                }
             }
-        }
-        .onDisappear {
-            if self.shouldCommitOnDisappear() {
-                self.commit()
+            .onDisappear {
+                if self.shouldCommitOnDisappear() {
+                    self.commit()
+                }
             }
+            .background(self.focusMonitor)
+
         }
-        .background(self.focusMonitor)
+
     }
 
     private var horizontalEditor: some View {

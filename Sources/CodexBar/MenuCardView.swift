@@ -570,24 +570,32 @@ private struct MetricRowHeader: View {
 
     var body: some View {
         if let resetText {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    self.titleLabel
-                        .fixedSize(horizontal: true, vertical: false)
-                    Spacer(minLength: 8)
-                    self.resetLabel(resetText)
-                        .fixedSize(horizontal: true, vertical: false)
+            if #available(macOS 13, *) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        self.titleLabel
+                            .fixedSize(horizontal: true, vertical: false)
+                        Spacer(minLength: 8)
+                        self.resetLabel(resetText)
+                            .fixedSize(horizontal: true, vertical: false)
+                    }
+                    self.stackedHeader(resetText)
                 }
-                VStack(alignment: .trailing, spacing: 2) {
-                    self.titleLabel
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    self.resetLabel(resetText)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                }
+            } else {
+                self.stackedHeader(resetText)
             }
         } else {
             self.titleLabel
+        }
+    }
+
+    private func stackedHeader(_ resetText: String) -> some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            self.titleLabel
+                .frame(maxWidth: .infinity, alignment: .leading)
+            self.resetLabel(resetText)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 
@@ -613,7 +621,7 @@ private struct UsageNotesContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            ForEach(Array(self.notes.enumerated()), id: \.offset) { _, note in
+            ForEach(Array(self.notes.enumerated()), id: \.offset) { note in
                 Text(note)
                     .font(.footnote)
                     .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))

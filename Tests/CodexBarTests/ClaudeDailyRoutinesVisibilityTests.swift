@@ -1,6 +1,6 @@
 import CodexBarCore
 import Foundation
-import Observation
+import Perception
 import Testing
 @testable import CodexBar
 
@@ -39,7 +39,7 @@ struct ClaudeDailyRoutinesSettingsTests {
         #expect(store.claudeDailyRoutinesUsageVisible)
         let backgroundRevision = store.backgroundWorkSettingsRevision
         let menuDidChange = ObservationFlag()
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.menuObservationToken
         } onChange: {
             menuDidChange.set()

@@ -49,7 +49,7 @@ struct AboutPane: View {
                         SettingsRowLabel(L("update_channel"), subtitle: self.updateChannel.description)
                     }
 
-                    LabeledContent(String(format: L("version_format"), self.versionString)) {
+                    CodexBarLabeledContent(String(format: L("version_format"), self.versionString)) {
                         Button(L("check_for_updates")) { self.updater.checkForUpdates(nil) }
                     }
                 } header: {
@@ -78,9 +78,9 @@ struct AboutPane: View {
                     .multilineTextAlignment(.center)
             }
         }
-        .formStyle(.grouped)
+        .codexbarGroupedFormStyle()
         .toggleStyle(.switch)
-        .scrollContentBackground(.hidden)
+        .codexbarScrollContentBackgroundHidden()
         .onAppear {
             guard !self.didLoadUpdaterState else { return }
             // Align Sparkle's flag with the persisted preference on first load.
@@ -88,7 +88,7 @@ struct AboutPane: View {
             self.updater.automaticallyDownloadsUpdates = self.autoUpdateEnabled
             self.didLoadUpdaterState = true
         }
-        .onChange(of: self.autoUpdateEnabled) { _, newValue in
+        .onChange(of: self.autoUpdateEnabled) { newValue in
             self.updater.automaticallyChecksForUpdates = newValue
             self.updater.automaticallyDownloadsUpdates = newValue
         }

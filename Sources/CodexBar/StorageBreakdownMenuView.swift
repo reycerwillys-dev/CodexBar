@@ -122,7 +122,7 @@ struct StorageBreakdownMenuView: View {
         ScrollView(.vertical) {
             self.content
         }
-        .scrollIndicators(.visible)
+        .codexbarScrollIndicators(shows: true)
         .frame(
             minWidth: self.width,
             idealWidth: self.width,

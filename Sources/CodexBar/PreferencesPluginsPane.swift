@@ -2,110 +2,116 @@
 import AppKit
 import CodexBarCore
 import SwiftUI
+import Perception
 import UniformTypeIdentifiers
 
 @MainActor
 struct PluginsPane: View {
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
+    @Perception.Bindable var settings: SettingsStore
+    @Perception.Bindable var store: UsageStore
     @State private var results: [UserProviderPluginLoadResult] = []
     @State private var pendingApproval: PendingPluginApproval?
     @State private var pendingDelete: PluginDeleteRequest?
     @State private var operationError: String?
 
     var body: some View {
-        Form {
-            Section {
-                LabeledContent {
-                    Button(L("Install…")) { self.choosePlugin() }
-                } label: {
-                    SettingsRowLabel(
-                        L("Install plugin"),
-                        subtitle: L("Copies a JavaScript or TypeScript file into the plugins directory."))
-                }
 
-                LabeledContent {
-                    HStack(spacing: 8) {
-                        Button(L("Refresh")) { self.refresh() }
-                        Button(L("Show in Finder")) { self.revealPluginsDirectory() }
-                    }
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(L("Plugins directory"))
-                        Text(Self.pluginsDirectoryDisplayPath)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                    }
-                }
-            } header: {
-                Text(L("Provider Plugins"))
-            } footer: {
-                SettingsSectionFooter(
-                    L("Plugins are local JavaScript or TypeScript files. Network and cookie access require approval."))
-            }
-
-            if self.results.isEmpty {
+        WithPerceptionTracking {
+            Form {
                 Section {
-                    ContentUnavailableView {
-                        Label(L("No Plugins Installed"), systemImage: "puzzlepiece.extension")
-                    } description: {
-                        Text(L("Drop a .js or .ts file into the plugins directory, or choose Install…"))
+                    CodexBarLabeledContent {
+                        Button(L("Install…")) { self.choosePlugin() }
+                    } label: {
+                        SettingsRowLabel(
+                            L("Install plugin"),
+                            subtitle: L("Copies a JavaScript or TypeScript file into the plugins directory."))
                     }
-                    .frame(maxWidth: .infinity, minHeight: 180)
-                }
-            }
 
-            ForEach(self.results, id: \.fileURL) { result in
-                if let plugin = result.plugin {
-                    self.pluginSection(plugin)
-                } else {
-                    self.invalidPluginSection(result)
+                    CodexBarLabeledContent {
+                        HStack(spacing: 8) {
+                            Button(L("Refresh")) { self.refresh() }
+                            Button(L("Show in Finder")) { self.revealPluginsDirectory() }
+                        }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L("Plugins directory"))
+                            Text(Self.pluginsDirectoryDisplayPath)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                        }
+                    }
+                } header: {
+                    Text(L("Provider Plugins"))
+                } footer: {
+                    SettingsSectionFooter(
+                        L("Plugins are local JavaScript or TypeScript files. Network and cookie access require approval."))
+                }
+
+                if self.results.isEmpty {
+                    Section {
+                        CodexBarContentUnavailableView {
+                            Label(L("No Plugins Installed"), systemImage: "puzzlepiece.extension")
+                        } description: {
+                            Text(L("Drop a .js or .ts file into the plugins directory, or choose Install…"))
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 180)
+                    }
+                }
+
+                ForEach(self.results, id: \.fileURL) { result in
+                    if let plugin = result.plugin {
+                        self.pluginSection(plugin)
+                    } else {
+                        self.invalidPluginSection(result)
+                    }
                 }
             }
-        }
-        .formStyle(.grouped)
-        .toggleStyle(.switch)
-        .scrollContentBackground(.hidden)
-        .background(FocusResigningBackground())
-        .onAppear { self.refresh() }
-        .sheet(item: self.$pendingApproval) { pending in
-            PluginApprovalSheet(
-                pending: pending,
-                onCancel: { self.pendingApproval = nil },
-                onApprove: { confirmations, settings in
-                    self.completeApproval(pending, confirmations: confirmations, settings: settings)
+            .codexbarGroupedFormStyle()
+            .toggleStyle(.switch)
+            .codexbarScrollContentBackgroundHidden()
+            .background(FocusResigningBackground())
+            .onAppear { self.refresh() }
+            .sheet(item: self.$pendingApproval) { pending in
+                PluginApprovalSheet(
+                    pending: pending,
+                    onCancel: { self.pendingApproval = nil },
+                    onApprove: { confirmations, settings in
+                        self.completeApproval(pending, confirmations: confirmations, settings: settings)
+                    })
+            }
+            .alert(
+                L("Delete Plugin?"),
+                isPresented: Binding(
+                    get: { self.pendingDelete != nil },
+                    set: {
+                        if !$0 {
+                            self.pendingDelete = nil
+                        }
+                    }),
+                actions: {
+                    Button(L("Delete"), role: .destructive) { self.completeDelete() }
+                    Button(L("Cancel"), role: .cancel) { self.pendingDelete = nil }
+                },
+                message: {
+                    Text(L(
+                        "This removes the plugin file, transpile cache, approval, " +
+                            "saved settings and secrets, and history."))
                 })
+            .alert(
+                L("Plugin Error"),
+                isPresented: Binding(
+                    get: { self.operationError != nil },
+                    set: {
+                        if !$0 {
+                            self.operationError = nil
+                        }
+                    }),
+                actions: { Button(L("OK")) { self.operationError = nil } },
+                message: { Text(self.operationError ?? "") })
+
         }
-        .alert(
-            L("Delete Plugin?"),
-            isPresented: Binding(
-                get: { self.pendingDelete != nil },
-                set: {
-                    if !$0 {
-                        self.pendingDelete = nil
-                    }
-                }),
-            actions: {
-                Button(L("Delete"), role: .destructive) { self.completeDelete() }
-                Button(L("Cancel"), role: .cancel) { self.pendingDelete = nil }
-            },
-            message: {
-                Text(L(
-                    "This removes the plugin file, transpile cache, approval, " +
-                        "saved settings and secrets, and history."))
-            })
-        .alert(
-            L("Plugin Error"),
-            isPresented: Binding(
-                get: { self.operationError != nil },
-                set: {
-                    if !$0 {
-                        self.operationError = nil
-                    }
-                }),
-            actions: { Button(L("OK")) { self.operationError = nil } },
-            message: { Text(self.operationError ?? "") })
+
     }
 
     private func pluginSection(_ plugin: UserProviderPlugin) -> some View {
@@ -122,19 +128,19 @@ struct PluginsPane: View {
 
         return Section {
             Toggle(L("Enabled"), isOn: self.enabledBinding(plugin.manifest.id))
-            LabeledContent(L("Status"), value: status)
-            LabeledContent(L("File")) {
+            CodexBarLabeledContent(L("Status"), value: status)
+            CodexBarLabeledContent(L("File")) {
                 Text(Self.displayPath(plugin.fileURL)).textSelection(.enabled)
             }
-            LabeledContent(
+            CodexBarLabeledContent(
                 L("Origins"),
                 value: binding?.origins.joined(separator: ", ") ?? L("Configure endpoint settings"))
-            LabeledContent(
+            CodexBarLabeledContent(
                 L("Capabilities"),
                 value: plugin.manifest.capabilities.map(\.rawValue).sorted().joined(separator: ", ")
                     .nilIfEmpty ?? L("Network"))
             if !plugin.manifest.cookieDomains.isEmpty {
-                LabeledContent(
+                CodexBarLabeledContent(
                     L("Cookie domains"),
                     value: plugin.manifest.cookieDomains.sorted().joined(separator: ", "))
             }
@@ -174,8 +180,8 @@ struct PluginsPane: View {
 
     private func invalidPluginSection(_ result: UserProviderPluginLoadResult) -> some View {
         Section {
-            LabeledContent(L("File")) { Text(Self.displayPath(result.fileURL)).textSelection(.enabled) }
-            LabeledContent(L("Status"), value: L("Error"))
+            CodexBarLabeledContent(L("File")) { Text(Self.displayPath(result.fileURL)).textSelection(.enabled) }
+            CodexBarLabeledContent(L("Status"), value: L("Error"))
             Label(result.error ?? L("Unknown validation error"), systemImage: "exclamationmark.triangle.fill")
                 .font(.callout)
                 .foregroundStyle(.red)
@@ -350,52 +356,57 @@ private struct PluginApprovalSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(self.pending.sourceURL == nil ? L("Approve Plugin") : L("Install and Approve Plugin"))
-                .font(.title2.bold())
-            Text(self.pending.plugin.manifest.name)
-            ForEach(self.pending.plugin.manifest.settings.filter { $0.kind == .plain }, id: \.key) { setting in
-                TextField(setting.title, text: Binding(
-                    get: { self.settings[setting.key] ?? "" },
-                    set: { self.settings[setting.key] = $0 }))
-            }
-            if let binding = self.binding {
-                GroupBox(L("Network authority")) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(binding.origins, id: \.self) { Text($0).textSelection(.enabled) }
-                        Text(L("Auth: %@", binding.authMode))
-                        Text(L(
-                            "Capabilities: %@",
-                            binding.capabilities.joined(separator: ", ").nilIfEmpty ?? L("network")))
-                        Text(L("Secrets: %@", binding.secretNames.joined(separator: ", ").nilIfEmpty ?? L("none")))
-                        if !binding.cookieDomains.isEmpty {
-                            Text(L("Cookie domains: %@", binding.cookieDomains.joined(separator: ", ")))
+
+        WithPerceptionTracking {
+            VStack(alignment: .leading, spacing: 14) {
+                Text(self.pending.sourceURL == nil ? L("Approve Plugin") : L("Install and Approve Plugin"))
+                    .font(.title2.bold())
+                Text(self.pending.plugin.manifest.name)
+                ForEach(self.pending.plugin.manifest.settings.filter { $0.kind == .plain }, id: \.key) { setting in
+                    TextField(setting.title, text: Binding(
+                        get: { self.settings[setting.key] ?? "" },
+                        set: { self.settings[setting.key] = $0 }))
+                }
+                if let binding = self.binding {
+                    GroupBox(L("Network authority")) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            ForEach(binding.origins, id: \.self) { Text($0).textSelection(.enabled) }
+                            Text(L("Auth: %@", binding.authMode))
+                            Text(L(
+                                "Capabilities: %@",
+                                binding.capabilities.joined(separator: ", ").nilIfEmpty ?? L("network")))
+                            Text(L("Secrets: %@", binding.secretNames.joined(separator: ", ").nilIfEmpty ?? L("none")))
+                            if !binding.cookieDomains.isEmpty {
+                                Text(L("Cookie domains: %@", binding.cookieDomains.joined(separator: ", ")))
+                            }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    ForEach(binding.typedConfirmationOrigins, id: \.self) { origin in
+                        TextField(L("Type %@ to confirm", origin), text: Binding(
+                            get: { self.confirmations[origin] ?? "" },
+                            set: { self.confirmations[origin] = $0 }))
+                    }
+                } else {
+                    Text(L("Enter every endpoint setting to review the exact network origins."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                ForEach(binding.typedConfirmationOrigins, id: \.self) { origin in
-                    TextField(L("Type %@ to confirm", origin), text: Binding(
-                        get: { self.confirmations[origin] ?? "" },
-                        set: { self.confirmations[origin] = $0 }))
+                HStack {
+                    Spacer()
+                    Button(L("Cancel"), role: .cancel, action: self.onCancel)
+                    Button(self.pending.sourceURL == nil ? L("Approve") : L("Install")) {
+                        self.onApprove(self.confirmations, self.settings)
+                    }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!self.canApprove)
                 }
-            } else {
-                Text(L("Enter every endpoint setting to review the exact network origins."))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
-            HStack {
-                Spacer()
-                Button(L("Cancel"), role: .cancel, action: self.onCancel)
-                Button(self.pending.sourceURL == nil ? L("Approve") : L("Install")) {
-                    self.onApprove(self.confirmations, self.settings)
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(!self.canApprove)
-            }
+            .padding(20)
+            .frame(width: 520)
+
         }
-        .padding(20)
-        .frame(width: 520)
+
     }
 
     private var canApprove: Bool {

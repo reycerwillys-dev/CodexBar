@@ -1,10 +1,10 @@
 import AppKit
 import CodexBarCore
-import Observation
+import Perception
 
 extension StatusItemController {
     func observeCloudSyncChanges() {
-        withObservationTracking {
+        withPerceptionTracking {
             _ = self.cloudSyncState.fleetDevices
             _ = self.cloudSyncState.fleetSnapshots
         } onChange: { [weak self] in

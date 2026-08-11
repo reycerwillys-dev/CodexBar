@@ -1,113 +1,124 @@
 import CodexBarCore
 import SwiftUI
+import Perception
 
 @MainActor
 struct MenuPane: View {
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
+    @Perception.Bindable var settings: SettingsStore
+    @Perception.Bindable var store: UsageStore
 
     var body: some View {
-        Form {
-            Section {
-                SettingsMenuPicker(
-                    selection: self.$settings.usageBarsFillOption,
-                    options: MenuSettingsMenuOptions.usageBarsFill,
-                    label: { Text(L("usage_bars_fill_title")) },
-                    optionLabel: { option in
-                        Text(option.label)
-                    })
 
-                Toggle(isOn: self.$settings.quotaWarningMarkersVisible) {
-                    SettingsRowLabel(
-                        L("show_quota_warning_markers_title"),
-                        subtitle: L("show_quota_warning_markers_subtitle"))
+        WithPerceptionTracking {
+            Form {
+                Section {
+                    SettingsMenuPicker(
+                        selection: self.$settings.usageBarsFillOption,
+                        options: MenuSettingsMenuOptions.usageBarsFill,
+                        label: { Text(L("usage_bars_fill_title")) },
+                        optionLabel: { option in
+                            Text(option.label)
+                        })
+
+                    Toggle(isOn: self.$settings.quotaWarningMarkersVisible) {
+                        SettingsRowLabel(
+                            L("show_quota_warning_markers_title"),
+                            subtitle: L("show_quota_warning_markers_subtitle"))
+                    }
+
+                    SettingsMenuPicker(
+                        selection: self.$settings.weeklyProgressWorkDays,
+                        options: MenuSettingsMenuOptions.weeklyProgressWorkDays,
+                        label: {
+                            Text(L("weekly_progress_work_days_title"))
+                        },
+                        optionLabel: { workDays in
+                            Text(MenuSettingsMenuOptions.weeklyProgressWorkDaysLabel(workDays))
+                        })
+
+                    SettingsMenuPicker(
+                        selection: self.$settings.resetTimesOption,
+                        options: MenuSettingsMenuOptions.resetTimes,
+                        label: { Text(L("reset_times_title")) },
+                        optionLabel: { option in
+                            Text(option.label)
+                        })
+                } header: {
+                    Text(L("section_usage"))
                 }
 
-                SettingsMenuPicker(
-                    selection: self.$settings.weeklyProgressWorkDays,
-                    options: MenuSettingsMenuOptions.weeklyProgressWorkDays,
-                    label: {
-                        Text(L("weekly_progress_work_days_title"))
-                    },
-                    optionLabel: { workDays in
-                        Text(MenuSettingsMenuOptions.weeklyProgressWorkDaysLabel(workDays))
-                    })
+                Section {
+                    Toggle(L("show_provider_changelog_links_title"), isOn: self.$settings.providerChangelogLinksEnabled)
 
-                SettingsMenuPicker(
-                    selection: self.$settings.resetTimesOption,
-                    options: MenuSettingsMenuOptions.resetTimes,
-                    label: { Text(L("reset_times_title")) },
-                    optionLabel: { option in
-                        Text(option.label)
-                    })
-            } header: {
-                Text(L("section_usage"))
-            }
+                    Toggle(isOn: self.$settings.showOptionalCreditsAndExtraUsage) {
+                        SettingsRowLabel(
+                            L("show_credits_extra_usage_title"),
+                            subtitle: L("show_credits_extra_usage_subtitle"))
+                    }
 
-            Section {
-                Toggle(L("show_provider_changelog_links_title"), isOn: self.$settings.providerChangelogLinksEnabled)
-
-                Toggle(isOn: self.$settings.showOptionalCreditsAndExtraUsage) {
-                    SettingsRowLabel(
-                        L("show_credits_extra_usage_title"),
-                        subtitle: L("show_credits_extra_usage_subtitle"))
+                    SettingsMenuPicker(
+                        selection: self.$settings.multiAccountMenuLayout,
+                        options: MenuSettingsMenuOptions.multiAccountLayouts,
+                        label: {
+                            Text(L("multi_account_layout_title"))
+                        },
+                        optionLabel: { layout in
+                            Text(layout.label)
+                        })
+                } header: {
+                    Text(L("section_content"))
                 }
 
-                SettingsMenuPicker(
-                    selection: self.$settings.multiAccountMenuLayout,
-                    options: MenuSettingsMenuOptions.multiAccountLayouts,
-                    label: {
-                        Text(L("multi_account_layout_title"))
-                    },
-                    optionLabel: { layout in
-                        Text(layout.label)
-                    })
-            } header: {
-                Text(L("section_content"))
+                CostSummarySettingsSection(settings: self.settings, store: self.store)
+
+                AgentSessionsSettingsSection(settings: self.settings)
             }
+            .codexbarGroupedFormStyle()
+            .toggleStyle(.switch)
+            .codexbarScrollContentBackgroundHidden()
+            .background(FocusResigningBackground())
 
-            CostSummarySettingsSection(settings: self.settings, store: self.store)
-
-            AgentSessionsSettingsSection(settings: self.settings)
         }
-        .formStyle(.grouped)
-        .toggleStyle(.switch)
-        .scrollContentBackground(.hidden)
-        .background(FocusResigningBackground())
+
     }
 }
 
 @MainActor
 struct AgentSessionsSettingsSection: View {
-    @Bindable var settings: SettingsStore
+    @Perception.Bindable var settings: SettingsStore
 
     var body: some View {
-        Section {
-            Toggle(isOn: self.$settings.agentSessionsEnabled) {
-                SettingsRowLabel(
-                    L("agent_sessions_title"),
-                    subtitle: L("agent_sessions_subtitle"))
+
+        WithPerceptionTracking {
+            Section {
+                Toggle(isOn: self.$settings.agentSessionsEnabled) {
+                    SettingsRowLabel(
+                        L("agent_sessions_title"),
+                        subtitle: L("agent_sessions_subtitle"))
+                }
+
+                SettingsMenuPicker(
+                    selection: self.$settings.agentSessionLabelStyle,
+                    options: MenuSettingsMenuOptions.agentSessionLabelStyles,
+                    label: {
+                        SettingsRowLabel(
+                            L("agent_session_labels_title"),
+                            subtitle: L("agent_session_labels_subtitle"))
+                    },
+                    optionLabel: { style in
+                        Text(style.label)
+                    })
+                    .disabled(!self.settings.agentSessionsEnabled)
+
+                AgentSessionHostsEditor(settings: self.settings)
+            } header: {
+                Text(L("section_agent_sessions"))
+            } footer: {
+                SettingsSectionFooter(L("agent_sessions_footer"))
             }
 
-            SettingsMenuPicker(
-                selection: self.$settings.agentSessionLabelStyle,
-                options: MenuSettingsMenuOptions.agentSessionLabelStyles,
-                label: {
-                    SettingsRowLabel(
-                        L("agent_session_labels_title"),
-                        subtitle: L("agent_session_labels_subtitle"))
-                },
-                optionLabel: { style in
-                    Text(style.label)
-                })
-                .disabled(!self.settings.agentSessionsEnabled)
-
-            AgentSessionHostsEditor(settings: self.settings)
-        } header: {
-            Text(L("section_agent_sessions"))
-        } footer: {
-            SettingsSectionFooter(L("agent_sessions_footer"))
         }
+
     }
 }
 
@@ -115,66 +126,76 @@ struct AgentSessionsSettingsSection: View {
 struct AgentSessionHostsEditor: View {
     static let inputFormatHint = "user@host, user@host"
 
-    @Bindable var settings: SettingsStore
+    @Perception.Bindable var settings: SettingsStore
 
     var body: some View {
-        LabeledContent(L("agent_sessions_hosts_title")) {
-            TextField(
-                L("agent_sessions_hosts_title"),
-                text: self.$settings.agentSessionsManualHosts,
-                prompt: Text(verbatim: Self.inputFormatHint))
-                .labelsHidden()
-                .textFieldStyle(.roundedBorder)
-                .frame(minWidth: 220, idealWidth: 280)
-                .accessibilityLabel(L("agent_sessions_hosts_title"))
+
+        WithPerceptionTracking {
+            CodexBarLabeledContent(L("agent_sessions_hosts_title")) {
+                TextField(
+                    L("agent_sessions_hosts_title"),
+                    text: self.$settings.agentSessionsManualHosts,
+                    prompt: Text(verbatim: Self.inputFormatHint))
+                    .labelsHidden()
+                    .textFieldStyle(.roundedBorder)
+                    .frame(minWidth: 220, idealWidth: 280)
+                    .accessibilityLabel(L("agent_sessions_hosts_title"))
+            }
+            .disabled(!self.settings.agentSessionsEnabled)
+            .help(L("agent_sessions_footer"))
+
         }
-        .disabled(!self.settings.agentSessionsEnabled)
-        .help(L("agent_sessions_footer"))
+
     }
 }
 
 /// Cost summary settings grouped-form section, including per-provider fetch status in the footer.
 @MainActor
 struct CostSummarySettingsSection: View {
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
+    @Perception.Bindable var settings: SettingsStore
+    @Perception.Bindable var store: UsageStore
 
     var body: some View {
-        Section {
-            SettingsMenuPicker(
-                selection: self.$settings.costSummaryOption,
-                options: MenuSettingsMenuOptions.costSummaries,
-                label: {
-                    SettingsRowLabel(L("cost_summary_title"), subtitle: L("show_cost_summary_subtitle"))
-                },
-                optionLabel: { option in
-                    Text(option.label)
-                })
 
-            if self.settings.costUsageEnabled {
-                CostHistoryDaysEditor(settings: self.settings)
+        WithPerceptionTracking {
+            Section {
+                SettingsMenuPicker(
+                    selection: self.$settings.costSummaryOption,
+                    options: MenuSettingsMenuOptions.costSummaries,
+                    label: {
+                        SettingsRowLabel(L("cost_summary_title"), subtitle: L("show_cost_summary_subtitle"))
+                    },
+                    optionLabel: { option in
+                        Text(option.label)
+                    })
 
-                Toggle(isOn: self.$settings.costComparisonPeriodsEnabled) {
-                    SettingsRowLabel(
-                        L("cost_comparison_periods_title"),
-                        subtitle: L("cost_comparison_periods_subtitle"))
+                if self.settings.costUsageEnabled {
+                    CostHistoryDaysEditor(settings: self.settings)
+
+                    Toggle(isOn: self.$settings.costComparisonPeriodsEnabled) {
+                        SettingsRowLabel(
+                            L("cost_comparison_periods_title"),
+                            subtitle: L("cost_comparison_periods_subtitle"))
+                    }
                 }
-            }
-        } header: {
-            Text(L("section_cost_summary"))
-        } footer: {
-            if self.settings.costUsageEnabled {
-                SettingsSectionFooter {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(L("cost_auto_refresh_info"))
-                        ForEach(Self.costStatusProviders, id: \.self) { provider in
-                            self.costStatusLine(provider: provider)
+            } header: {
+                Text(L("section_cost_summary"))
+            } footer: {
+                if self.settings.costUsageEnabled {
+                    SettingsSectionFooter {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(L("cost_auto_refresh_info"))
+                            ForEach(Self.costStatusProviders, id: \.self) { provider in
+                                self.costStatusLine(provider: provider)
+                            }
+                            Text(Self.costDataExplanation())
                         }
-                        Text(Self.costDataExplanation())
                     }
                 }
             }
+
         }
+
     }
 
     static func costDataExplanation() -> String {
@@ -232,30 +253,35 @@ struct CostSummarySettingsSection: View {
 
 @MainActor
 struct CostHistoryDaysEditor: View {
-    @Bindable var settings: SettingsStore
+    @Perception.Bindable var settings: SettingsStore
 
     static func title(days: Int) -> String {
         String(format: L("cost_history_days_title"), days)
     }
 
     var body: some View {
-        LabeledContent(Self.title(days: self.settings.costUsageHistoryDays)) {
-            HStack(spacing: 8) {
-                TextField(
-                    Self.title(days: self.settings.costUsageHistoryDays),
-                    value: self.$settings.costUsageHistoryDays,
-                    format: .number)
-                    .labelsHidden()
-                    .textFieldStyle(.roundedBorder)
-                    .multilineTextAlignment(.trailing)
-                    .monospacedDigit()
-                    .frame(width: 64)
 
-                Stepper(value: self.$settings.costUsageHistoryDays, in: 1...365, step: 1) {
-                    EmptyView()
+        WithPerceptionTracking {
+            CodexBarLabeledContent(Self.title(days: self.settings.costUsageHistoryDays)) {
+                HStack(spacing: 8) {
+                    TextField(
+                        Self.title(days: self.settings.costUsageHistoryDays),
+                        value: self.$settings.costUsageHistoryDays,
+                        format: .number)
+                        .labelsHidden()
+                        .textFieldStyle(.roundedBorder)
+                        .multilineTextAlignment(.trailing)
+                        .monospacedDigit()
+                        .frame(width: 64)
+
+                    Stepper(value: self.$settings.costUsageHistoryDays, in: 1...365, step: 1) {
+                        EmptyView()
+                    }
+                    .labelsHidden()
                 }
-                .labelsHidden()
             }
+
         }
+
     }
 }

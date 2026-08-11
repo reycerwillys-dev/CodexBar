@@ -1,6 +1,7 @@
 import AppKit
 import CodexBarCore
 import SwiftUI
+import Perception
 
 /// Sidebar destinations of the settings window: fixed app panes plus one entry per provider.
 enum SettingsPane: Hashable {
@@ -50,11 +51,11 @@ enum SettingsPane: Hashable {
 
 @MainActor
 struct PreferencesView: View {
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
-    @Bindable var cloudSyncState: CloudSyncState
+    @Perception.Bindable var settings: SettingsStore
+    @Perception.Bindable var store: UsageStore
+    @Perception.Bindable var cloudSyncState: CloudSyncState
     let updater: UpdaterProviding
-    @Bindable var selection: PreferencesSelection
+    @Perception.Bindable var selection: PreferencesSelection
     let managedCodexAccountCoordinator: ManagedCodexAccountCoordinator
     let codexAccountPromotionCoordinator: CodexAccountPromotionCoordinator
     let runProviderLoginFlow: @MainActor (UsageProvider) async -> Void
@@ -92,53 +93,58 @@ struct PreferencesView: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Golden Gate-style sidebar: edge-to-edge material with a hairline separator,
-            // no floating card chrome. The material ignores the safe area so it runs up
-            // behind the transparent titlebar. The width is user-resizable via the
-            // input-only drag strip overlaid on the detail pane's leading edge.
-            SettingsSidebarView(settings: self.settings, store: self.store, selection: self.$selection.pane)
-                .frame(width: self.clampedSidebarWidth)
-                .background {
-                    SettingsSidebarMaterial()
-                        .ignoresSafeArea()
-                }
 
-            Divider()
-                .ignoresSafeArea()
+        WithPerceptionTracking {
+            HStack(spacing: 0) {
+                // Golden Gate-style sidebar: edge-to-edge material with a hairline separator,
+                // no floating card chrome. The material ignores the safe area so it runs up
+                // behind the transparent titlebar. The width is user-resizable via the
+                // input-only drag strip overlaid on the detail pane's leading edge.
+                SettingsSidebarView(settings: self.settings, store: self.store, selection: self.$selection.pane)
+                    .frame(width: self.clampedSidebarWidth)
+                    .background {
+                        SettingsSidebarMaterial()
+                            .ignoresSafeArea()
+                    }
 
-            self.detailView
-                .frame(
-                    maxWidth: SettingsPane.detailMaxWidth,
-                    maxHeight: .infinity,
-                    alignment: .topLeading)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .overlay(alignment: .leading) {
-                    self.sidebarResizeHandle
-                }
+                Divider()
+                    .ignoresSafeArea()
+
+                self.detailView
+                    .frame(
+                        maxWidth: SettingsPane.detailMaxWidth,
+                        maxHeight: .infinity,
+                        alignment: .topLeading)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .overlay(alignment: .leading) {
+                        self.sidebarResizeHandle
+                    }
+            }
+            .frame(
+                minWidth: SettingsPane.windowMinWidth,
+                idealWidth: SettingsPane.windowWidth,
+                maxWidth: .infinity,
+                minHeight: SettingsPane.windowMinHeight,
+                idealHeight: SettingsPane.windowHeight,
+                maxHeight: .infinity)
+            .id(self.settings.appLanguage)
+            .background {
+                SettingsWindowAppearanceBridge(colorScheme: self.colorScheme, windowTitle: self.selection.pane.title)
+                    .allowsHitTesting(false)
+            }
+            .onAppear {
+                self.ensureValidSelection()
+            }
+            .onChange(of: self.settings.debugMenuEnabled) { _ in
+                self.ensureValidSelection()
+            }
+            .onChange(of: self.settings.shouldRequestAdaptiveActivityScanConsent) { shouldRequest in
+                guard shouldRequest else { return }
+                AdaptiveActivityConsentPresenter.presentIfNeeded(settings: self.settings)
+            }
+
         }
-        .frame(
-            minWidth: SettingsPane.windowMinWidth,
-            idealWidth: SettingsPane.windowWidth,
-            maxWidth: .infinity,
-            minHeight: SettingsPane.windowMinHeight,
-            idealHeight: SettingsPane.windowHeight,
-            maxHeight: .infinity)
-        .id(self.settings.appLanguage)
-        .background {
-            SettingsWindowAppearanceBridge(colorScheme: self.colorScheme, windowTitle: self.selection.pane.title)
-                .allowsHitTesting(false)
-        }
-        .onAppear {
-            self.ensureValidSelection()
-        }
-        .onChange(of: self.settings.debugMenuEnabled) { _, _ in
-            self.ensureValidSelection()
-        }
-        .onChange(of: self.settings.shouldRequestAdaptiveActivityScanConsent) { _, shouldRequest in
-            guard shouldRequest else { return }
-            AdaptiveActivityConsentPresenter.presentIfNeeded(settings: self.settings)
-        }
+
     }
 
     @ViewBuilder
@@ -149,11 +155,7 @@ struct PreferencesView: View {
             maxWidth: SettingsPane.sidebarMaxWidth)
             .frame(width: SidebarResizeHandleView.grabWidth)
             .ignoresSafeArea()
-        if #available(macOS 15.0, *) {
-            handle.pointerStyle(.columnResize)
-        } else {
-            handle
-        }
+        handle
     }
 
     @ViewBuilder

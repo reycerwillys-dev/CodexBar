@@ -1,6 +1,6 @@
 import AppKit
 import CodexBarCore
-import Observation
+import Perception
 import SwiftUI
 
 extension StatusItemController {
@@ -80,7 +80,7 @@ protocol MenuCardMeasuring: AnyObject {
 }
 
 @MainActor
-@Observable
+@Perceptible
 final class MenuCardHighlightState {
     var isHighlighted = false
 }
@@ -812,7 +812,7 @@ extension MenuRowContainerView {
 #endif
 
 struct MenuCardSectionContainerView<Content: View>: View {
-    @Bindable var highlightState: MenuCardHighlightState
+    @Perception.Bindable var highlightState: MenuCardHighlightState
     let showsSubmenuIndicator: Bool
     let submenuIndicatorAlignment: Alignment
     let submenuIndicatorTopPadding: CGFloat
@@ -839,36 +839,41 @@ struct MenuCardSectionContainerView<Content: View>: View {
     }
 
     var body: some View {
-        self.content()
-            .environment(\.menuItemHighlighted, self.highlightState.isHighlighted)
-            .environment(\.menuCardRefreshMonitor, self.refreshMonitor)
-            .coordinateSpace(name: MenuCardInteractiveRegionPreferenceKey.coordinateSpaceName)
-            .onPreferenceChange(MenuCardInteractiveRegionPreferenceKey.self) { regions in
-                self.interactiveRegionStore?.regions = regions
-            }
-            .foregroundStyle(MenuHighlightStyle.primary(self.highlightState.isHighlighted))
-            .background(alignment: .topLeading) {
-                if self.highlightState.isHighlighted {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(MenuHighlightStyle.selectionBackground(true))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
+
+        WithPerceptionTracking {
+            self.content()
+                .environment(\.menuItemHighlighted, self.highlightState.isHighlighted)
+                .environment(\.menuCardRefreshMonitor, self.refreshMonitor)
+                .coordinateSpace(name: MenuCardInteractiveRegionPreferenceKey.coordinateSpaceName)
+                .onPreferenceChange(MenuCardInteractiveRegionPreferenceKey.self) { regions in
+                    self.interactiveRegionStore?.regions = regions
                 }
-            }
-            .overlay(alignment: self.submenuIndicatorAlignment) {
-                if self.showsSubmenuIndicator {
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(MenuHighlightStyle.secondary(self.highlightState.isHighlighted))
-                        .padding(.top, self.submenuIndicatorTopPadding)
-                        .padding(.trailing, 10)
+                .foregroundStyle(MenuHighlightStyle.primary(self.highlightState.isHighlighted))
+                .background(alignment: .topLeading) {
+                    if self.highlightState.isHighlighted {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(MenuHighlightStyle.selectionBackground(true))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                    }
                 }
-            }
+                .overlay(alignment: self.submenuIndicatorAlignment) {
+                    if self.showsSubmenuIndicator {
+                        Image(systemName: "chevron.right")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(MenuHighlightStyle.secondary(self.highlightState.isHighlighted))
+                            .padding(.top, self.submenuIndicatorTopPadding)
+                            .padding(.trailing, 10)
+                    }
+                }
+
+        }
+
     }
 }
 
 @MainActor
-@Observable
+@Perceptible
 final class MenuCardInteractiveRegionStore {
     var regions: [CGRect] = []
 

@@ -57,18 +57,10 @@ struct SettingsWindowOpener {
 }
 
 struct HiddenWindowView: View {
-    @Environment(\.openSettings) private var openSettings
-
     var body: some View {
         Color.clear
             .frame(width: 20, height: 20)
             .background(KeepaliveWindowConfigurator())
-            .onReceive(NotificationCenter.default.publisher(for: .codexbarOpenSettings)) { notification in
-                (notification.object as? SettingsOpenRequest)?.wasHandled = true
-                Task { @MainActor in
-                    self.openSettings()
-                }
-            }
             .task {
                 // Migrate keychain items to reduce permission prompts during development (runs off main thread)
                 await Task.detached(priority: .userInitiated) {

@@ -335,7 +335,7 @@ private struct ShareStatsMark: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 4) {
-            ForEach(Array([0.38, 0.68, 1.0].enumerated()), id: \.offset) { _, height in
+            ForEach(Array([0.38, 0.68, 1.0].enumerated()), id: \.offset) { height in
                 Capsule()
                     .fill(self.accent)
                     .frame(width: 5, height: 28 * height)

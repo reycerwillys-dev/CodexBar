@@ -20,7 +20,7 @@ struct SettingsMenuPicker<Value: Hashable, Label: View, OptionLabel: View>: View
     }
 
     var body: some View {
-        LabeledContent {
+        CodexBarLabeledContent {
             Menu {
                 ForEach(self.options, id: \.self) { option in
                     Button {

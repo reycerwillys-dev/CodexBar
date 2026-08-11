@@ -1,5 +1,6 @@
 import CodexBarCore
 import SwiftUI
+import Perception
 
 enum ProviderMetricInlinePresentation: Equatable {
     case progress
@@ -9,7 +10,7 @@ enum ProviderMetricInlinePresentation: Equatable {
 @MainActor
 struct ProviderDetailView<SupplementaryContent: View>: View {
     let provider: UsageProvider
-    @Bindable var store: UsageStore
+    @Perception.Bindable var store: UsageStore
     @Binding var isEnabled: Bool
     let subtitle: String
     let model: UsageMenuCardView.Model
@@ -111,140 +112,150 @@ struct ProviderDetailView<SupplementaryContent: View>: View {
     }
 
     var body: some View {
-        Form {
-            Section {
-                ProviderDetailHeaderRow(
-                    provider: self.provider,
-                    store: self.store,
-                    isEnabled: self.$isEnabled,
-                    subtitle: self.subtitle,
-                    onRefresh: self.onRefresh)
 
-                ProviderDetailInfoRows(
-                    provider: self.provider,
-                    store: self.store,
-                    isEnabled: self.isEnabled,
-                    model: self.model)
-            }
-
-            Section {
-                ProviderMetricsInlineView(
-                    provider: self.provider,
-                    model: self.model,
-                    openAIWebDiagnostic: self.openAIWebDiagnostic,
-                    isEnabled: self.isEnabled,
-                    isRefreshing: self.store.refreshingProviders.contains(self.provider.instanceID))
-            } header: {
-                Text(L("Usage"))
-            }
-
-            if let errorDisplay {
+        WithPerceptionTracking {
+            Form {
                 Section {
-                    ProviderErrorView(
-                        title: String(
-                            format: L("last_fetch_failed_with_provider"),
-                            self.store.metadata(for: self.provider).displayName),
-                        display: errorDisplay,
-                        isExpanded: self.$isErrorExpanded,
-                        onCopy: { self.onCopyError(errorDisplay.full) })
+                    ProviderDetailHeaderRow(
+                        provider: self.provider,
+                        store: self.store,
+                        isEnabled: self.$isEnabled,
+                        subtitle: self.subtitle,
+                        onRefresh: self.onRefresh)
+
+                    ProviderDetailInfoRows(
+                        provider: self.provider,
+                        store: self.store,
+                        isEnabled: self.isEnabled,
+                        model: self.model)
                 }
-            }
 
-            if !self.menuBarSettingsPickers.isEmpty {
                 Section {
-                    ForEach(self.menuBarSettingsPickers) { picker in
-                        ProviderSettingsPickerRowView(picker: picker)
-                    }
+                    ProviderMetricsInlineView(
+                        provider: self.provider,
+                        model: self.model,
+                        openAIWebDiagnostic: self.openAIWebDiagnostic,
+                        isEnabled: self.isEnabled,
+                        isRefreshing: self.store.refreshingProviders.contains(self.provider.instanceID))
                 } header: {
-                    Text(L("provider_section_menu_bar"))
+                    Text(L("Usage"))
+                }
+
+                if let errorDisplay {
+                    Section {
+                        ProviderErrorView(
+                            title: String(
+                                format: L("last_fetch_failed_with_provider"),
+                                self.store.metadata(for: self.provider).displayName),
+                            display: errorDisplay,
+                            isExpanded: self.$isErrorExpanded,
+                            onCopy: { self.onCopyError(errorDisplay.full) })
+                    }
+                }
+
+                if !self.menuBarSettingsPickers.isEmpty {
+                    Section {
+                        ForEach(self.menuBarSettingsPickers) { picker in
+                            ProviderSettingsPickerRowView(picker: picker)
+                        }
+                    } header: {
+                        Text(L("provider_section_menu_bar"))
+                    }
+                }
+
+                if !self.connectionSettingsPickers.isEmpty || !self.settingsActions.isEmpty {
+                    Section {
+                        ForEach(self.connectionSettingsPickers) { picker in
+                            ProviderSettingsPickerRowView(picker: picker)
+                        }
+                        ForEach(self.settingsActions) { descriptor in
+                            ProviderSettingsActionsRowView(descriptor: descriptor)
+                        }
+                    } header: {
+                        Text(L("provider_section_connection"))
+                    }
+                }
+
+                if let tokenAccounts = self.settingsTokenAccounts,
+                   tokenAccounts.isVisible?() ?? true
+                {
+                    ProviderSettingsTokenAccountsRowView(descriptor: tokenAccounts)
+                }
+
+                ForEach(self.settingsFields) { field in
+                    ProviderSettingsFieldRowView(field: field)
+                }
+
+                if let organizations = self.settingsOrganizations {
+                    ProviderSettingsOrganizationsRowView(descriptor: organizations)
+                }
+
+                if self.showsSupplementarySettingsContent {
+                    self.supplementarySettingsContent
+                }
+
+                ProviderQuotaWarningSettingsView(provider: self.provider, settings: self.store.settings)
+
+                if !self.settingsToggles.isEmpty {
+                    Section {
+                        ForEach(self.settingsToggles) { toggle in
+                            ProviderSettingsToggleRowView(toggle: toggle)
+                        }
+                    } header: {
+                        Text(L("Options"))
+                    }
                 }
             }
+            .codexbarGroupedFormStyle()
+            .codexbarScrollContentBackgroundHidden()
 
-            if !self.connectionSettingsPickers.isEmpty || !self.settingsActions.isEmpty {
-                Section {
-                    ForEach(self.connectionSettingsPickers) { picker in
-                        ProviderSettingsPickerRowView(picker: picker)
-                    }
-                    ForEach(self.settingsActions) { descriptor in
-                        ProviderSettingsActionsRowView(descriptor: descriptor)
-                    }
-                } header: {
-                    Text(L("provider_section_connection"))
-                }
-            }
-
-            if let tokenAccounts = self.settingsTokenAccounts,
-               tokenAccounts.isVisible?() ?? true
-            {
-                ProviderSettingsTokenAccountsRowView(descriptor: tokenAccounts)
-            }
-
-            ForEach(self.settingsFields) { field in
-                ProviderSettingsFieldRowView(field: field)
-            }
-
-            if let organizations = self.settingsOrganizations {
-                ProviderSettingsOrganizationsRowView(descriptor: organizations)
-            }
-
-            if self.showsSupplementarySettingsContent {
-                self.supplementarySettingsContent
-            }
-
-            ProviderQuotaWarningSettingsView(provider: self.provider, settings: self.store.settings)
-
-            if !self.settingsToggles.isEmpty {
-                Section {
-                    ForEach(self.settingsToggles) { toggle in
-                        ProviderSettingsToggleRowView(toggle: toggle)
-                    }
-                } header: {
-                    Text(L("Options"))
-                }
-            }
         }
-        .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
+
     }
 }
 
 @MainActor
 private struct ProviderDetailHeaderRow: View {
     let provider: UsageProvider
-    @Bindable var store: UsageStore
+    @Perception.Bindable var store: UsageStore
     @Binding var isEnabled: Bool
     let subtitle: String
     let onRefresh: () -> Void
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            ProviderDetailBrandIcon(provider: self.provider)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(self.store.metadata(for: self.provider).displayName)
-                    .font(.title3.weight(.semibold))
+        WithPerceptionTracking {
+            HStack(alignment: .center, spacing: 12) {
+                ProviderDetailBrandIcon(provider: self.provider)
 
-                Text(self.detailSubtitle)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(self.store.metadata(for: self.provider).displayName)
+                        .font(.title3.weight(.semibold))
+
+                    Text(self.detailSubtitle)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 12)
+
+                Button {
+                    self.onRefresh()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .buttonStyle(.borderless)
+                .help(L("Refresh"))
+
+                Toggle(L("Enabled"), isOn: self.$isEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
             }
+            .padding(.vertical, 2)
 
-            Spacer(minLength: 12)
-
-            Button {
-                self.onRefresh()
-            } label: {
-                Image(systemName: "arrow.clockwise")
-            }
-            .buttonStyle(.borderless)
-            .help(L("Refresh"))
-
-            Toggle(L("Enabled"), isOn: self.$isEnabled)
-                .labelsHidden()
-                .toggleStyle(.switch)
-                .controlSize(.small)
         }
-        .padding(.vertical, 2)
+
     }
 
     private var detailSubtitle: String {
@@ -265,56 +276,66 @@ private struct ProviderDetailBrandIcon: View {
     let provider: UsageProvider
 
     var body: some View {
-        if let brand = ProviderBrandIcon.image(for: self.provider) {
-            Image(nsImage: brand)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 28, height: 28)
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-        } else {
-            Image(systemName: "circle.dotted")
-                .font(.system(size: 24, weight: .regular))
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
+
+        WithPerceptionTracking {
+            if let brand = ProviderBrandIcon.image(for: self.provider) {
+                Image(nsImage: brand)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 28, height: 28)
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            } else {
+                Image(systemName: "circle.dotted")
+                    .font(.system(size: 24, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
+
         }
+
     }
 }
 
 @MainActor
 private struct ProviderDetailInfoRows: View {
     let provider: UsageProvider
-    @Bindable var store: UsageStore
+    @Perception.Bindable var store: UsageStore
     let isEnabled: Bool
     let model: UsageMenuCardView.Model
 
     var body: some View {
-        ProviderDetailInfoRow(label: L("Source"), value: self.store.sourceLabel(for: self.provider))
-        ProviderDetailInfoRow(label: L("Version"), value: self.store.version(for: self.provider) ?? L("not detected"))
-        ProviderDetailInfoRow(label: L("Updated"), value: self.updatedText)
 
-        if let status = self.store.status(for: self.provider) {
-            ProviderDetailInfoRow(label: L("Status"), value: status.description ?? status.indicator.label)
+        WithPerceptionTracking {
+            ProviderDetailInfoRow(label: L("Source"), value: self.store.sourceLabel(for: self.provider))
+            ProviderDetailInfoRow(label: L("Version"), value: self.store.version(for: self.provider) ?? L("not detected"))
+            ProviderDetailInfoRow(label: L("Updated"), value: self.updatedText)
+
+            if let status = self.store.status(for: self.provider) {
+                ProviderDetailInfoRow(label: L("Status"), value: status.description ?? status.indicator.label)
+            }
+
+            if !self.model.email.isEmpty {
+                ProviderDetailInfoRow(label: L("Account"), value: self.model.email)
+            }
+
+            // Provider-specific by design: Kiro reports an auth method as a separate identity field, not a plan.
+            if self.provider == .kiro,
+               let authMethod = self.store.snapshot(for: self.provider.instanceID)?.loginMethod(for: .kiro),
+               !authMethod.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            {
+                ProviderDetailInfoRow(label: L("Auth"), value: authMethod)
+            }
+
+            if let planRow = ProviderDetailView<EmptyView>.planRow(
+                provider: self.provider,
+                planText: self.model.planText)
+            {
+                ProviderDetailInfoRow(label: planRow.label, value: planRow.value)
+            }
+
         }
 
-        if !self.model.email.isEmpty {
-            ProviderDetailInfoRow(label: L("Account"), value: self.model.email)
-        }
-
-        // Provider-specific by design: Kiro reports an auth method as a separate identity field, not a plan.
-        if self.provider == .kiro,
-           let authMethod = self.store.snapshot(for: self.provider.instanceID)?.loginMethod(for: .kiro),
-           !authMethod.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        {
-            ProviderDetailInfoRow(label: L("Auth"), value: authMethod)
-        }
-
-        if let planRow = ProviderDetailView<EmptyView>.planRow(
-            provider: self.provider,
-            planText: self.model.planText)
-        {
-            ProviderDetailInfoRow(label: planRow.label, value: planRow.value)
-        }
     }
 
     private var updatedText: String {
@@ -336,13 +357,18 @@ private struct ProviderDetailInfoRow: View {
     let value: String
 
     var body: some View {
-        LabeledContent(self.label) {
-            Text(self.value)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.trailing)
-                .lineLimit(2)
-                .textSelection(.enabled)
+
+        WithPerceptionTracking {
+            CodexBarLabeledContent(self.label) {
+                Text(self.value)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.trailing)
+                    .lineLimit(2)
+                    .textSelection(.enabled)
+            }
+
         }
+
     }
 }
 
@@ -380,64 +406,69 @@ struct ProviderMetricsInlineView: View {
     }
 
     var body: some View {
-        let hasMetrics = !self.model.metrics.isEmpty
-        let hasUsageNotes = !self.model.usageNotes.isEmpty
-        let infoRows = Self.infoRows(for: self.model, openAIWebDiagnostic: self.openAIWebDiagnostic)
-        let hasProviderCost = self.model.providerCost?.showsInProviderDetails == true
-        let hasTokenUsage = self.model.tokenUsage != nil
-        let hasResetCredits = self.model.codexResetCredits != nil
 
-        if !hasMetrics, !hasUsageNotes, !hasProviderCost, infoRows.isEmpty, !hasTokenUsage, !hasResetCredits {
-            Text(self.placeholderText)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        } else {
-            ForEach(self.model.metrics, id: \.id) { metric in
-                ProviderMetricInlineRow(
-                    metric: metric,
-                    title: ProviderDetailView<EmptyView>.metricTitle(provider: self.provider, metric: metric),
-                    progressColor: self.model.progressColor)
-            }
+        WithPerceptionTracking {
+            let hasMetrics = !self.model.metrics.isEmpty
+            let hasUsageNotes = !self.model.usageNotes.isEmpty
+            let infoRows = Self.infoRows(for: self.model, openAIWebDiagnostic: self.openAIWebDiagnostic)
+            let hasProviderCost = self.model.providerCost?.showsInProviderDetails == true
+            let hasTokenUsage = self.model.tokenUsage != nil
+            let hasResetCredits = self.model.codexResetCredits != nil
 
-            if hasUsageNotes {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(Array(self.model.usageNotes.enumerated()), id: \.offset) { _, note in
-                        Text(note)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
+            if !hasMetrics, !hasUsageNotes, !hasProviderCost, infoRows.isEmpty, !hasTokenUsage, !hasResetCredits {
+                Text(self.placeholderText)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(self.model.metrics, id: \.id) { metric in
+                    ProviderMetricInlineRow(
+                        metric: metric,
+                        title: ProviderDetailView<EmptyView>.metricTitle(provider: self.provider, metric: metric),
+                        progressColor: self.model.progressColor)
+                }
+
+                if hasUsageNotes {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(Array(self.model.usageNotes.enumerated()), id: \.offset) { note in
+                            Text(note)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+
+                ForEach(infoRows) { row in
+                    ProviderDetailInfoRow(label: row.label, value: row.value)
+                }
+
+                if let resetCredits = self.model.codexResetCredits {
+                    ProviderCodexResetCreditsInlineRow(presentation: resetCredits)
+                }
+
+                if let providerCost = self.model.providerCost, providerCost.showsInProviderDetails {
+                    ProviderMetricInlineCostRow(
+                        section: providerCost,
+                        progressColor: self.model.progressColor)
+                }
+
+                if let tokenUsage = self.model.tokenUsage {
+                    ProviderMetricInlineTextRow(
+                        title: L("Cost"),
+                        value: tokenUsage.sessionLine)
+                    ProviderMetricInlineTextRow(title: "", value: tokenUsage.monthLine)
+                    if ProviderDescriptorRegistry.descriptor(for: self.model.provider).tokenCost.showsHintInProviderDetails,
+                       let hint = tokenUsage.hintLine,
+                       !hint.isEmpty
+                    {
+                        ProviderMetricInlineTextRow(title: "", value: hint)
                     }
                 }
             }
 
-            ForEach(infoRows) { row in
-                ProviderDetailInfoRow(label: row.label, value: row.value)
-            }
-
-            if let resetCredits = self.model.codexResetCredits {
-                ProviderCodexResetCreditsInlineRow(presentation: resetCredits)
-            }
-
-            if let providerCost = self.model.providerCost, providerCost.showsInProviderDetails {
-                ProviderMetricInlineCostRow(
-                    section: providerCost,
-                    progressColor: self.model.progressColor)
-            }
-
-            if let tokenUsage = self.model.tokenUsage {
-                ProviderMetricInlineTextRow(
-                    title: L("Cost"),
-                    value: tokenUsage.sessionLine)
-                ProviderMetricInlineTextRow(title: "", value: tokenUsage.monthLine)
-                if ProviderDescriptorRegistry.descriptor(for: self.model.provider).tokenCost.showsHintInProviderDetails,
-                   let hint = tokenUsage.hintLine,
-                   !hint.isEmpty
-                {
-                    ProviderMetricInlineTextRow(title: "", value: hint)
-                }
-            }
         }
+
     }
 
     private var placeholderText: String {
@@ -468,60 +499,65 @@ private struct ProviderMetricInlineRow: View {
     let progressColor: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            switch ProviderDetailView<EmptyView>.metricInlinePresentation(self.metric) {
-            case let .status(statusText):
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(self.title)
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-                    Spacer(minLength: 8)
-                    Text(statusText)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            case .progress:
-                let presentation = self.metric.linePresentation(title: self.title)
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(presentation.titleText)
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-                        .layoutPriority(1)
-                    Spacer(minLength: 8)
-                    if let resetText = presentation.resetText {
-                        Text(resetText)
+
+        WithPerceptionTracking {
+            VStack(alignment: .leading, spacing: 4) {
+                switch ProviderDetailView<EmptyView>.metricInlinePresentation(self.metric) {
+                case let .status(statusText):
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(self.title)
+                            .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
+                        Spacer(minLength: 8)
+                        Text(statusText)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                case .progress:
+                    let presentation = self.metric.linePresentation(title: self.title)
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(presentation.titleText)
+                            .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
+                            .layoutPriority(1)
+                        Spacer(minLength: 8)
+                        if let resetText = presentation.resetText {
+                            Text(resetText)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+
+                    UsageProgressBar(
+                        percent: self.metric.percent,
+                        tint: self.progressColor,
+                        accessibilityLabel: self.metric.percentStyle.accessibilityLabel,
+                        pacePercent: self.metric.pacePercent,
+                        paceOnTop: self.metric.paceOnTop,
+                        warningMarkerPercents: self.metric.warningMarkerPercents,
+                        workdayMarkerPercents: self.metric.workdayMarkerPercents)
+                        .frame(maxWidth: .infinity)
+
+                    if let metaText = presentation.metaText {
+                        Text(metaText)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
+
+                    if let detail = self.metric.detailText, !detail.isEmpty {
+                        Text(detail)
+                            .font(.footnote)
+                            .foregroundStyle(.tertiary)
                     }
                 }
-
-                UsageProgressBar(
-                    percent: self.metric.percent,
-                    tint: self.progressColor,
-                    accessibilityLabel: self.metric.percentStyle.accessibilityLabel,
-                    pacePercent: self.metric.pacePercent,
-                    paceOnTop: self.metric.paceOnTop,
-                    warningMarkerPercents: self.metric.warningMarkerPercents,
-                    workdayMarkerPercents: self.metric.workdayMarkerPercents)
-                    .frame(maxWidth: .infinity)
-
-                if let metaText = presentation.metaText {
-                    Text(metaText)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
-
-                if let detail = self.metric.detailText, !detail.isEmpty {
-                    Text(detail)
-                        .font(.footnote)
-                        .foregroundStyle(.tertiary)
-                }
             }
+            .padding(.vertical, 2)
+
         }
-        .padding(.vertical, 2)
+
     }
 }
 
@@ -529,30 +565,35 @@ private struct ProviderCodexResetCreditsInlineRow: View {
     let presentation: CodexResetCreditsPresentation
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(L("Limit Reset Credits"))
-                    .font(.subheadline.weight(.semibold))
-                Spacer(minLength: 8)
-                Text(self.presentation.text)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+
+        WithPerceptionTracking {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(L("Limit Reset Credits"))
+                        .font(.subheadline.weight(.semibold))
+                    Spacer(minLength: 8)
+                    Text(self.presentation.text)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Image(systemName: "clock")
+                        .font(.caption2)
+                    Text(self.presentation.expirySummaryText)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .accessibilityHidden(true)
             }
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Image(systemName: "clock")
-                    .font(.caption2)
-                Text(self.presentation.expirySummaryText)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .accessibilityHidden(true)
+            .padding(.vertical, 2)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(self.presentation.accessibilityLabel)
+
         }
-        .padding(.vertical, 2)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(self.presentation.accessibilityLabel)
+
     }
 }
 
@@ -561,17 +602,22 @@ private struct ProviderMetricInlineTextRow: View {
     let value: String
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            if !self.title.isEmpty {
-                Text(self.title)
-                    .font(.subheadline.weight(.semibold))
+
+        WithPerceptionTracking {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                if !self.title.isEmpty {
+                    Text(self.title)
+                        .font(.subheadline.weight(.semibold))
+                }
+                Spacer(minLength: 8)
+                Text(self.value)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.trailing)
             }
-            Spacer(minLength: 8)
-            Text(self.value)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.trailing)
+
         }
+
     }
 }
 
@@ -580,32 +626,37 @@ private struct ProviderMetricInlineCostRow: View {
     let progressColor: Color
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(self.section.title)
-                    .font(.subheadline.weight(.semibold))
-                Spacer(minLength: 8)
-                if let percentLine = self.section.percentLine {
-                    Text(percentLine)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
+
+        WithPerceptionTracking {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(self.section.title)
+                        .font(.subheadline.weight(.semibold))
+                    Spacer(minLength: 8)
+                    if let percentLine = self.section.percentLine {
+                        Text(percentLine)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                    }
                 }
-            }
 
-            if let percentUsed = self.section.percentUsed {
-                UsageProgressBar(
-                    percent: percentUsed,
-                    tint: self.progressColor,
-                    accessibilityLabel: L("Usage used"))
-                    .frame(maxWidth: .infinity)
-            }
+                if let percentUsed = self.section.percentUsed {
+                    UsageProgressBar(
+                        percent: percentUsed,
+                        tint: self.progressColor,
+                        accessibilityLabel: L("Usage used"))
+                        .frame(maxWidth: .infinity)
+                }
 
-            Text(self.section.spendLine)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .trailing)
+                Text(self.section.spendLine)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .padding(.vertical, 2)
+
         }
-        .padding(.vertical, 2)
+
     }
 }

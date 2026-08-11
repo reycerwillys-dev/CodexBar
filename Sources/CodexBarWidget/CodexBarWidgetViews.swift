@@ -2,8 +2,15 @@ import CodexBarCore
 import SwiftUI
 import WidgetKit
 
+private struct WidgetUsageShowsUsedKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
 extension EnvironmentValues {
-    @Entry fileprivate var widgetUsageShowsUsed: Bool = false
+    fileprivate var widgetUsageShowsUsed: Bool {
+        get { self[WidgetUsageShowsUsedKey.self] }
+        set { self[WidgetUsageShowsUsedKey.self] = newValue }
+    }
 }
 
 struct CodexBarUsageWidgetView: View {
@@ -20,7 +27,6 @@ struct CodexBarUsageWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .containerBackground(.fill.tertiary, for: .widget)
         .environment(\.widgetUsageShowsUsed, self.entry.snapshot.usageBarsShowUsed)
     }
 
@@ -63,7 +69,6 @@ struct CodexBarHistoryWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .containerBackground(.fill.tertiary, for: .widget)
     }
 
     private var emptyState: some View {
@@ -92,7 +97,6 @@ struct CodexBarCompactWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .containerBackground(.fill.tertiary, for: .widget)
     }
 
     private var emptyState: some View {
@@ -129,7 +133,6 @@ struct CodexBarSwitcherWidgetView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .containerBackground(.fill.tertiary, for: .widget)
         .environment(\.widgetUsageShowsUsed, self.entry.snapshot.usageBarsShowUsed)
     }
 

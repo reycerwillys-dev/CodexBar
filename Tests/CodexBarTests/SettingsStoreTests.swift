@@ -1,6 +1,6 @@
 import CodexBarCore
 import Foundation
-import Observation
+import Perception
 import Testing
 @testable import CodexBar
 
@@ -1345,7 +1345,7 @@ struct SettingsStoreTests {
         #expect(store.codexSparkUsageVisible)
         let backgroundRevision = store.backgroundWorkSettingsRevision
         let menuDidChange = ObservationFlag()
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.menuObservationToken
         } onChange: {
             menuDidChange.set()
@@ -1378,7 +1378,7 @@ struct SettingsStoreTests {
 
         let didChange = ObservationFlag()
 
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.menuObservationToken
         } onChange: {
             didChange.set()
@@ -1405,7 +1405,7 @@ struct SettingsStoreTests {
 
         let didChange = ObservationFlag()
 
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.menuObservationToken
         } onChange: {
             didChange.set()
@@ -1432,7 +1432,7 @@ struct SettingsStoreTests {
 
         let didChange = ObservationFlag()
 
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.menuObservationToken
         } onChange: {
             didChange.set()
@@ -1463,7 +1463,7 @@ struct SettingsStoreTests {
             thresholds: [Int]) async
         {
             let didChange = ObservationFlag()
-            withObservationTracking {
+            withPerceptionTracking {
                 _ = store.menuObservationToken
             } onChange: {
                 didChange.set()
@@ -1494,7 +1494,7 @@ struct SettingsStoreTests {
         store.setQuotaWarningThresholds(.session, thresholds: [70, 30])
 
         let didChange = ObservationFlag()
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.menuObservationToken
         } onChange: {
             didChange.set()
@@ -1521,7 +1521,7 @@ struct SettingsStoreTests {
 
         let didChange = ObservationFlag()
 
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.menuObservationToken
         } onChange: {
             didChange.set()
@@ -1548,7 +1548,7 @@ struct SettingsStoreTests {
 
         let didChange = ObservationFlag()
 
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.codexCookieSource
         } onChange: {
             didChange.set()
@@ -1575,7 +1575,7 @@ struct SettingsStoreTests {
 
         let didChange = ObservationFlag()
 
-        withObservationTracking {
+        withPerceptionTracking {
             _ = store.menuObservationToken
         } onChange: {
             didChange.set()

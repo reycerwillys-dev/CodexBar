@@ -1,6 +1,6 @@
 import AppKit
 import CodexBarCore
-import Observation
+import Perception
 import QuartzCore
 
 // MARK: - Status item controller (AppKit-hosted icons, SwiftUI popovers)
@@ -519,7 +519,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, StatusItemControllin
     }
 
     private func observeStoreChanges() {
-        withObservationTracking {
+        withPerceptionTracking {
             _ = self.store.menuObservationToken
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
@@ -548,7 +548,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, StatusItemControllin
     }
 
     private func observeStoreIconChanges() {
-        withObservationTracking {
+        withPerceptionTracking {
             _ = self.store.iconObservationToken
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
@@ -564,7 +564,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, StatusItemControllin
     }
 
     private func observeDebugForceAnimation() {
-        withObservationTracking {
+        withPerceptionTracking {
             _ = self.store.debugForceAnimation
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
@@ -577,7 +577,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, StatusItemControllin
     }
 
     private func observeSettingsChanges() {
-        withObservationTracking {
+        withPerceptionTracking {
             _ = self.settings.menuObservationToken
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
@@ -621,7 +621,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, StatusItemControllin
     }
 
     private func observeUpdaterChanges() {
-        withObservationTracking {
+        withPerceptionTracking {
             _ = self.updater.updateStatus.isUpdateReady
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
@@ -633,7 +633,7 @@ final class StatusItemController: NSObject, NSMenuDelegate, StatusItemControllin
     }
 
     private func observeManagedCodexCoordinatorChanges() {
-        withObservationTracking {
+        withPerceptionTracking {
             _ = self.managedCodexAccountCoordinator.isAuthenticatingManagedAccount
             _ = self.managedCodexAccountCoordinator.authenticatingManagedAccountID
             _ = self.managedCodexAccountCoordinator.isRemovingManagedAccount

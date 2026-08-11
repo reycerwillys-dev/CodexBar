@@ -1,6 +1,6 @@
 import CodexBarCore
 import Foundation
-import Observation
+import Perception
 
 struct AgentSessionRefreshGate {
     private(set) var generation = 0
@@ -32,7 +32,7 @@ struct AgentSessionRefreshGate {
 typealias AgentSessionRemoteRefreshGate = AgentSessionRefreshGate
 
 @MainActor
-@Observable
+@Perceptible
 final class AgentSessionsStore {
     typealias LocalScan = @Sendable (_ includeFileOnlySessions: Bool) async -> [AgentSession]
     typealias RemoteHostDiscovery = @Sendable () async -> [String]
@@ -53,13 +53,13 @@ final class AgentSessionsStore {
     private let remoteFetch: RemoteFetch
     private let remoteFetcher: RemoteSessionFetcher
     private let periodicSleep: PeriodicSleep
-    @ObservationIgnored private var localPeriodicTask: Task<Void, Never>?
-    @ObservationIgnored private var remotePeriodicTask: Task<Void, Never>?
-    @ObservationIgnored private var localImmediateTask: Task<Void, Never>?
-    @ObservationIgnored private var remoteImmediateTask: Task<Void, Never>?
-    @ObservationIgnored private var localRefreshGate = AgentSessionRefreshGate()
-    @ObservationIgnored private var remoteRefreshGate = AgentSessionRemoteRefreshGate()
-    @ObservationIgnored var onUpdate: (@MainActor () -> Void)?
+    @PerceptionIgnored private var localPeriodicTask: Task<Void, Never>?
+    @PerceptionIgnored private var remotePeriodicTask: Task<Void, Never>?
+    @PerceptionIgnored private var localImmediateTask: Task<Void, Never>?
+    @PerceptionIgnored private var remoteImmediateTask: Task<Void, Never>?
+    @PerceptionIgnored private var localRefreshGate = AgentSessionRefreshGate()
+    @PerceptionIgnored private var remoteRefreshGate = AgentSessionRemoteRefreshGate()
+    @PerceptionIgnored var onUpdate: (@MainActor () -> Void)?
 
     private(set) var isStarted = false
     private(set) var localSessions: [AgentSession] = []

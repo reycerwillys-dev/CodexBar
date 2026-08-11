@@ -18,7 +18,7 @@ enum FleetAccountMenuPlanner {
         let remote = snapshots
             .filter { $0.provider == provider.instanceID && $0.deviceID != currentDeviceID }
         let freshestByAccount = Dictionary(grouping: remote, by: \.accountKey)
-            .compactMap { _, candidates in candidates.max(by: self.isOlder) }
+            .compactMap { candidates in candidates.max(by: self.isOlder) }
             .sorted(by: self.isNewer)
         let fallback = hasLocalUsage ? nil : freshestByAccount.first
         let additionalAccounts = freshestByAccount.filter { candidate in

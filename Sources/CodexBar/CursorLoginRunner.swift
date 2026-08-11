@@ -178,7 +178,7 @@ final class CursorLoginRunner {
                 }
             }
         } else if let loadSnapshot {
-            self.loadBrowserLoginCandidates = { _, _ in
+            self.loadBrowserLoginCandidates = { _ in
                 let snapshot = try await loadSnapshot()
                 return [SnapshotLoadResult(snapshot: snapshot, session: nil)]
             }

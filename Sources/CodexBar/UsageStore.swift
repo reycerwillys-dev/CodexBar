@@ -1,7 +1,7 @@
 import AppKit
 import CodexBarCore
 import Foundation
-import Observation
+import Perception
 import SweetCookieKit
 
 // MARK: - Observation helpers
@@ -63,7 +63,7 @@ extension UsageStore {
     }
 
     func observeSettingsChanges() {
-        withObservationTracking {
+        withPerceptionTracking {
             _ = self.backgroundWorkSettingsObservationToken
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
@@ -132,7 +132,7 @@ extension UsageStore {
 }
 
 @MainActor
-@Observable
+@Perceptible
 final class UsageStore {
     nonisolated static let resetBoundaryRefreshGraceSeconds: TimeInterval = 30
     nonisolated static let resetBoundaryRefreshMinimumDelaySeconds: TimeInterval = 5
@@ -179,8 +179,8 @@ final class UsageStore {
     var claudeSwapLastError: String?
     var claudeSwapDetectedVersion: String?
     var claudeSwapRevision: UInt64 = 0
-    @ObservationIgnored var claudeSwapRefreshTask: Task<Void, Never>?
-    @ObservationIgnored var claudeSwapTransientState = ClaudeSwapTransientState()
+    @PerceptionIgnored var claudeSwapRefreshTask: Task<Void, Never>?
+    @PerceptionIgnored var claudeSwapTransientState = ClaudeSwapTransientState()
     var tokenSnapshots: [ProviderInstanceID: CostUsageTokenSnapshot] = [:]
     var tokenSnapshotPublications: [ProviderInstanceID: TokenSnapshotPublication] = [:]
     var tokenSnapshotPublicationRevisions: [ProviderInstanceID: UInt64] = [:]
@@ -197,7 +197,7 @@ final class UsageStore {
     var openAIDashboardCookieImportStatus: String?
     var openAIDashboardCookieImportDebugLog: String?
     var versions: [ProviderInstanceID: String] = [:]
-    @ObservationIgnored var versionDetectionProviders: Set<ProviderInstanceID> = []
+    @PerceptionIgnored var versionDetectionProviders: Set<ProviderInstanceID> = []
     var isRefreshing = false
     var hasForcedRefreshEnrichmentInFlight = false
     var refreshingProviders: Set<ProviderInstanceID> = []
@@ -209,11 +209,11 @@ final class UsageStore {
     var historicalPaceRevision: Int = 0
     var planUtilizationHistoryRevision: Int = 0
     var providerStorageFootprints: [ProviderInstanceID: ProviderStorageFootprint] = [:]
-    @ObservationIgnored var lastCreditsSnapshot: CreditsSnapshot?
-    @ObservationIgnored var lastCreditsSnapshotAccountKey: String?
-    @ObservationIgnored var lastCreditsSource: CodexCreditsSource = .none
-    @ObservationIgnored var creditsFailureStreak: Int = 0
-    @ObservationIgnored var openAIDashboardAttachmentAuthorized: Bool = false {
+    @PerceptionIgnored var lastCreditsSnapshot: CreditsSnapshot?
+    @PerceptionIgnored var lastCreditsSnapshotAccountKey: String?
+    @PerceptionIgnored var lastCreditsSource: CodexCreditsSource = .none
+    @PerceptionIgnored var creditsFailureStreak: Int = 0
+    @PerceptionIgnored var openAIDashboardAttachmentAuthorized: Bool = false {
         didSet {
             guard self.openAIDashboardAttachmentAuthorized != oldValue else { return }
             self.openAIDashboardAttachmentRevision &+= 1
@@ -221,210 +221,210 @@ final class UsageStore {
     }
 
     var openAIDashboardAttachmentRevision = 0
-    @ObservationIgnored var lastOpenAIDashboardSnapshot: OpenAIDashboardSnapshot?
-    @ObservationIgnored var lastOpenAIDashboardAttachmentAuthorized: Bool = false
-    @ObservationIgnored var lastOpenAIDashboardTargetEmail: String?
-    @ObservationIgnored var lastOpenAIDashboardTargetIsolationKey: String?
-    @ObservationIgnored var lastOpenAIDashboardAttemptAt: Date?
-    @ObservationIgnored var lastOpenAIDashboardCookieImportAttemptAt: Date?
-    @ObservationIgnored var lastOpenAIDashboardCookieImportEmail: String?
-    @ObservationIgnored var lastCodexAccountScopedRefreshGuard: CodexAccountScopedRefreshGuard?
-    @ObservationIgnored var lastCodexUsagePublicationGuard: CodexAccountScopedRefreshGuard?
-    @ObservationIgnored var lastKnownLiveSystemCodexEmail: String?
-    @ObservationIgnored var openAIWebAccountDidChange: Bool = false
-    @ObservationIgnored var creditsRefreshTask: Task<Void, Never>?
-    @ObservationIgnored var creditsRefreshTaskKey: String?
-    @ObservationIgnored var openAIDashboardBackgroundRefreshTask: Task<Void, Never>?
-    @ObservationIgnored var openAIDashboardBackgroundRefreshTaskKey: String?
-    @ObservationIgnored var openAIDashboardRefreshTask: Task<Void, Never>?
-    @ObservationIgnored var openAIDashboardRefreshTaskKey: String?
-    @ObservationIgnored var openAIDashboardRefreshTaskToken: UUID?
-    @ObservationIgnored var _test_openAIDashboardCookieImportOverride: (@MainActor (
+    @PerceptionIgnored var lastOpenAIDashboardSnapshot: OpenAIDashboardSnapshot?
+    @PerceptionIgnored var lastOpenAIDashboardAttachmentAuthorized: Bool = false
+    @PerceptionIgnored var lastOpenAIDashboardTargetEmail: String?
+    @PerceptionIgnored var lastOpenAIDashboardTargetIsolationKey: String?
+    @PerceptionIgnored var lastOpenAIDashboardAttemptAt: Date?
+    @PerceptionIgnored var lastOpenAIDashboardCookieImportAttemptAt: Date?
+    @PerceptionIgnored var lastOpenAIDashboardCookieImportEmail: String?
+    @PerceptionIgnored var lastCodexAccountScopedRefreshGuard: CodexAccountScopedRefreshGuard?
+    @PerceptionIgnored var lastCodexUsagePublicationGuard: CodexAccountScopedRefreshGuard?
+    @PerceptionIgnored var lastKnownLiveSystemCodexEmail: String?
+    @PerceptionIgnored var openAIWebAccountDidChange: Bool = false
+    @PerceptionIgnored var creditsRefreshTask: Task<Void, Never>?
+    @PerceptionIgnored var creditsRefreshTaskKey: String?
+    @PerceptionIgnored var openAIDashboardBackgroundRefreshTask: Task<Void, Never>?
+    @PerceptionIgnored var openAIDashboardBackgroundRefreshTaskKey: String?
+    @PerceptionIgnored var openAIDashboardRefreshTask: Task<Void, Never>?
+    @PerceptionIgnored var openAIDashboardRefreshTaskKey: String?
+    @PerceptionIgnored var openAIDashboardRefreshTaskToken: UUID?
+    @PerceptionIgnored var _test_openAIDashboardCookieImportOverride: (@MainActor (
         String?,
         Bool,
         ProviderCookieSource,
         CookieHeaderCache.Scope?,
         @escaping (String) -> Void) async throws -> OpenAIDashboardBrowserCookieImporter.ImportResult)?
-    @ObservationIgnored var _test_openAIDashboardLoaderOverride: (@MainActor (
+    @PerceptionIgnored var _test_openAIDashboardLoaderOverride: (@MainActor (
         String?,
         @escaping (String) -> Void,
         Bool,
         TimeInterval) async throws -> OpenAIDashboardSnapshot)?
-    @ObservationIgnored var _test_codexCreditsLoaderOverride: (@MainActor () async throws -> CreditsSnapshot)?
-    @ObservationIgnored var _test_codexResetCreditsFetcherOverride: CodexResetCreditsFetcher?
-    @ObservationIgnored var _test_widgetSnapshotSaveOverride: (@MainActor (WidgetSnapshot) async -> Void)?
-    @ObservationIgnored var _test_providerRefreshOverride: (@MainActor (UsageProvider) async -> Void)?
-    @ObservationIgnored var _test_providerFetchOutcomeOverride: (@MainActor (
+    @PerceptionIgnored var _test_codexCreditsLoaderOverride: (@MainActor () async throws -> CreditsSnapshot)?
+    @PerceptionIgnored var _test_codexResetCreditsFetcherOverride: CodexResetCreditsFetcher?
+    @PerceptionIgnored var _test_widgetSnapshotSaveOverride: (@MainActor (WidgetSnapshot) async -> Void)?
+    @PerceptionIgnored var _test_providerRefreshOverride: (@MainActor (UsageProvider) async -> Void)?
+    @PerceptionIgnored var _test_providerFetchOutcomeOverride: (@MainActor (
         UsageProvider) async -> ProviderFetchOutcome)?
-    @ObservationIgnored var _test_tokenUsageRefreshOverride: (@MainActor (UsageProvider, Bool) async -> Void)?
-    @ObservationIgnored var _test_tokenUsageSnapshotLoaderOverride: (@MainActor (
+    @PerceptionIgnored var _test_tokenUsageRefreshOverride: (@MainActor (UsageProvider, Bool) async -> Void)?
+    @PerceptionIgnored var _test_tokenUsageSnapshotLoaderOverride: (@MainActor (
         UsageProvider,
         Bool,
         Date,
         String?,
         Int) async throws -> CostUsageTokenSnapshot)?
-    @ObservationIgnored var _test_cachedCodexTokenSnapshotLoaderOverride: (@MainActor (
+    @PerceptionIgnored var _test_cachedCodexTokenSnapshotLoaderOverride: (@MainActor (
         Date,
         String?,
         Int) async -> (
         snapshot: CostUsageTokenSnapshot,
         lastRefreshAt: Date?,
         staleSnapshotUpdatedAt: Date?)?)?
-    @ObservationIgnored var _test_codexCostCatchUpStatusOverride: (@MainActor (
+    @PerceptionIgnored var _test_codexCostCatchUpStatusOverride: (@MainActor (
         String?) async -> CostUsageFetcher.CodexScanCatchUpStatus)?
-    @ObservationIgnored var _test_codexCostCatchUpAdvanceOverride: (@MainActor (
+    @PerceptionIgnored var _test_codexCostCatchUpAdvanceOverride: (@MainActor (
         Date,
         String?,
         Int) async throws -> CostUsageFetcher.CodexScanCatchUpStatus)?
-    @ObservationIgnored var _test_codexCostCatchUpSleepOverride: (@MainActor (
+    @PerceptionIgnored var _test_codexCostCatchUpSleepOverride: (@MainActor (
         TimeInterval) async throws -> Void)?
-    @ObservationIgnored var _test_codexCostCatchUpResourceStateOverride: (@MainActor () -> (
+    @PerceptionIgnored var _test_codexCostCatchUpResourceStateOverride: (@MainActor () -> (
         powerSource: CodexCostCatchUpPowerSource,
         lowPowerModeEnabled: Bool,
         thermalState: ProcessInfo.ThermalState))?
-    @ObservationIgnored var _test_spendDashboardCodexCostCatchUpStatusOverride: (@MainActor (
+    @PerceptionIgnored var _test_spendDashboardCodexCostCatchUpStatusOverride: (@MainActor (
         CodexSpendScanRequest) async -> CostUsageFetcher.CodexScanCatchUpStatus)?
-    @ObservationIgnored var _test_spendDashboardCodexCostCatchUpAdvanceOverride: (@MainActor (
+    @PerceptionIgnored var _test_spendDashboardCodexCostCatchUpAdvanceOverride: (@MainActor (
         CodexSpendScanRequest,
         Date,
         Int) async throws -> CostUsageFetcher.CodexScanCatchUpStatus)?
-    @ObservationIgnored var _test_spendDashboardCodexCostCatchUpSleepOverride: (@MainActor (
+    @PerceptionIgnored var _test_spendDashboardCodexCostCatchUpSleepOverride: (@MainActor (
         TimeInterval) async throws -> Void)?
-    @ObservationIgnored var _test_spendDashboardCodexCostCatchUpResourceStateOverride: (@MainActor () -> (
+    @PerceptionIgnored var _test_spendDashboardCodexCostCatchUpResourceStateOverride: (@MainActor () -> (
         powerSource: CodexCostCatchUpPowerSource,
         lowPowerModeEnabled: Bool,
         thermalState: ProcessInfo.ThermalState))?
-    @ObservationIgnored var _test_providerStatusFetchOverride: (@MainActor (
+    @PerceptionIgnored var _test_providerStatusFetchOverride: (@MainActor (
         UsageProvider) async throws -> ProviderStatus)?
-    @ObservationIgnored var _test_forcedRefreshEnrichmentWaitObserver: (@MainActor () -> Void)?
-    @ObservationIgnored var _test_startupConnectivityRetryScheduled: (@MainActor (Int, TimeInterval) -> Void)?
-    @ObservationIgnored var _test_startupConnectivityRetrySleepOverride: (@MainActor (
+    @PerceptionIgnored var _test_forcedRefreshEnrichmentWaitObserver: (@MainActor () -> Void)?
+    @PerceptionIgnored var _test_startupConnectivityRetryScheduled: (@MainActor (Int, TimeInterval) -> Void)?
+    @PerceptionIgnored var _test_startupConnectivityRetrySleepOverride: (@MainActor (
         TimeInterval) async throws -> Void)?
-    @ObservationIgnored var widgetSnapshotPersistTask: Task<Void, Never>?
-    @ObservationIgnored var lastQueuedWidgetSnapshot: WidgetSnapshot?
-    @ObservationIgnored let widgetSnapshotURL: URL?
-    @ObservationIgnored var widgetUsagePreservationBlockedProviders: Set<ProviderInstanceID> = []
+    @PerceptionIgnored var widgetSnapshotPersistTask: Task<Void, Never>?
+    @PerceptionIgnored var lastQueuedWidgetSnapshot: WidgetSnapshot?
+    @PerceptionIgnored let widgetSnapshotURL: URL?
+    @PerceptionIgnored var widgetUsagePreservationBlockedProviders: Set<ProviderInstanceID> = []
 
-    @ObservationIgnored let codexFetcher: UsageFetcher
-    @ObservationIgnored let claudeFetcher: any ClaudeUsageFetching
-    @ObservationIgnored let costUsageFetcher: CostUsageFetcher
-    @ObservationIgnored let browserDetection: BrowserDetection
-    @ObservationIgnored private let registry: ProviderRegistry
-    @ObservationIgnored let settings: SettingsStore
-    @ObservationIgnored let environmentBase: [String: String]
-    @ObservationIgnored let pluginApprovalStore = ProviderPluginApprovalStore()
-    @ObservationIgnored let sessionQuotaNotifier: any SessionQuotaNotifying
-    @ObservationIgnored let sessionQuotaLogger = CodexBarLog.logger(LogCategories.sessionQuota)
+    @PerceptionIgnored let codexFetcher: UsageFetcher
+    @PerceptionIgnored let claudeFetcher: any ClaudeUsageFetching
+    @PerceptionIgnored let costUsageFetcher: CostUsageFetcher
+    @PerceptionIgnored let browserDetection: BrowserDetection
+    @PerceptionIgnored private let registry: ProviderRegistry
+    @PerceptionIgnored let settings: SettingsStore
+    @PerceptionIgnored let environmentBase: [String: String]
+    @PerceptionIgnored let pluginApprovalStore = ProviderPluginApprovalStore()
+    @PerceptionIgnored let sessionQuotaNotifier: any SessionQuotaNotifying
+    @PerceptionIgnored let sessionQuotaLogger = CodexBarLog.logger(LogCategories.sessionQuota)
     // Provider-specific by design: OpenAI web and Augment runtime diagnostics have dedicated app-owned log streams.
-    @ObservationIgnored let openAIWebLogger = CodexBarLog.logger(LogCategories.provider(.openai, scope: "web"))
-    @ObservationIgnored private let tokenCostLogger = CodexBarLog.logger(LogCategories.tokenCost)
-    @ObservationIgnored let augmentLogger = CodexBarLog.logger(LogCategories.provider(.augment))
-    @ObservationIgnored let providerLogger = CodexBarLog.logger(LogCategories.providers)
-    @ObservationIgnored let adaptiveRefreshLogger = CodexBarLog.logger(LogCategories.adaptiveRefresh)
-    @ObservationIgnored var openAIWebDebugLines: [String] = []
-    @ObservationIgnored var failureGates: [ProviderInstanceID: ConsecutiveFailureGate] = [:]
-    @ObservationIgnored var tokenFailureGates: [ProviderInstanceID: ConsecutiveFailureGate] = [:]
-    @ObservationIgnored var providerSpecs: [UsageProvider: ProviderSpec] = [:]
-    @ObservationIgnored let providerMetadata: [UsageProvider: ProviderMetadata]
-    @ObservationIgnored var providerRuntimes: [ProviderInstanceID: any ProviderRuntime] = [:]
-    @ObservationIgnored var providerRefreshCoordinator = ProviderRefreshCoordinator<ProviderInstanceID>()
-    @ObservationIgnored var providerRefreshPublicationContexts:
+    @PerceptionIgnored let openAIWebLogger = CodexBarLog.logger(LogCategories.provider(.openai, scope: "web"))
+    @PerceptionIgnored private let tokenCostLogger = CodexBarLog.logger(LogCategories.tokenCost)
+    @PerceptionIgnored let augmentLogger = CodexBarLog.logger(LogCategories.provider(.augment))
+    @PerceptionIgnored let providerLogger = CodexBarLog.logger(LogCategories.providers)
+    @PerceptionIgnored let adaptiveRefreshLogger = CodexBarLog.logger(LogCategories.adaptiveRefresh)
+    @PerceptionIgnored var openAIWebDebugLines: [String] = []
+    @PerceptionIgnored var failureGates: [ProviderInstanceID: ConsecutiveFailureGate] = [:]
+    @PerceptionIgnored var tokenFailureGates: [ProviderInstanceID: ConsecutiveFailureGate] = [:]
+    @PerceptionIgnored var providerSpecs: [UsageProvider: ProviderSpec] = [:]
+    @PerceptionIgnored let providerMetadata: [UsageProvider: ProviderMetadata]
+    @PerceptionIgnored var providerRuntimes: [ProviderInstanceID: any ProviderRuntime] = [:]
+    @PerceptionIgnored var providerRefreshCoordinator = ProviderRefreshCoordinator<ProviderInstanceID>()
+    @PerceptionIgnored var providerRefreshPublicationContexts:
         [ProviderInstanceID: ProviderRefreshPublicationContext] = [:]
-    @ObservationIgnored var providerCleanupRevisions: [ProviderInstanceID: UInt64] = [:]
-    @ObservationIgnored private var providerAvailabilityCache:
+    @PerceptionIgnored var providerCleanupRevisions: [ProviderInstanceID: UInt64] = [:]
+    @PerceptionIgnored private var providerAvailabilityCache:
         [ProviderInstanceID: ProviderAvailabilityCacheEntry] = [:]
-    @ObservationIgnored var accountInfoCache: [ProviderInstanceID: AccountInfoCacheEntry] = [:]
-    @ObservationIgnored private var timerTask: Task<Void, Never>?
+    @PerceptionIgnored var accountInfoCache: [ProviderInstanceID: AccountInfoCacheEntry] = [:]
+    @PerceptionIgnored private var timerTask: Task<Void, Never>?
     /// In-memory only; resets on every launch.
-    @ObservationIgnored private(set) var lastMenuOpenAt: Date?
+    @PerceptionIgnored private(set) var lastMenuOpenAt: Date?
     /// Latest local Codex/Claude transcript activity observed by the existing session scanner.
     /// In-memory only; paths and session identities never enter the refresh policy.
-    @ObservationIgnored private(set) var lastCodingActivityAt: Date?
-    @ObservationIgnored var adaptiveRefreshScheduledAt: Date?
-    @ObservationIgnored var tokenRefreshSequenceTask: Task<Void, Never>?
-    @ObservationIgnored var tokenRefreshSequenceToken: UUID?
-    @ObservationIgnored var tokenRefreshSequenceProvider: ProviderInstanceID?
-    @ObservationIgnored var tokenRefreshSequenceIsForcedAllPass = false
-    @ObservationIgnored var pendingForcedTokenRefresh = false
-    @ObservationIgnored var lastForcedTokenRefreshStartedAt: Date?
-    @ObservationIgnored var tokenRefreshRetryProviders: Set<ProviderInstanceID> = []
-    @ObservationIgnored var codexCostCatchUpTask: Task<Void, Never>?
-    @ObservationIgnored var codexCostCatchUpToken: UUID?
-    @ObservationIgnored var codexCostCatchUpScopeSignature: String?
-    @ObservationIgnored var codexCostCatchUpMode: CodexCostCatchUpMode = .automatic
-    @ObservationIgnored var codexCostCatchUpStopRequested = false
-    @ObservationIgnored var codexCostCatchUpPassIsRunning = false
-    @ObservationIgnored var spendDashboardCodexCostCatchUpTask: Task<Void, Never>?
-    @ObservationIgnored var spendDashboardCodexCostCatchUpToken: UUID?
-    @ObservationIgnored var spendDashboardCodexCostCatchUpScopeSignature: String?
-    @ObservationIgnored var spendDashboardCodexCostCatchUpMode: CodexCostCatchUpMode = .automatic
-    @ObservationIgnored var spendDashboardCodexCostCatchUpStopRequested = false
-    @ObservationIgnored var spendDashboardCodexCostCatchUpPassIsRunning = false
-    @ObservationIgnored var forcedRefreshEnrichmentTask: Task<Void, Never>?
-    @ObservationIgnored var forcedRefreshEnrichmentToken: UUID?
-    @ObservationIgnored var pendingForcedRefreshEnrichmentTask: Task<Void, Never>?
-    @ObservationIgnored var pendingForcedRefreshEnrichmentToken: UUID?
-    @ObservationIgnored var forcedRefreshEnrichmentGeneration: UInt64 = 0
-    @ObservationIgnored var requiredRefreshTask: Task<Bool, Never>?
-    @ObservationIgnored var requiredRefreshTaskToken: UUID?
-    @ObservationIgnored var pendingRequiredRefreshRequest: RequiredRefreshRequest?
-    @ObservationIgnored var requiredRefreshRequestGeneration: UInt64 = 0
-    @ObservationIgnored var requiredRefreshCompletedGeneration: UInt64 = 0
-    @ObservationIgnored var memoryPressureReliefTask: Task<Void, Never>?
-    @ObservationIgnored var startupConnectivityRetryTask: Task<Void, Never>?
-    @ObservationIgnored var startupConnectivityRetryNeeded = false
-    @ObservationIgnored var startupConnectivityRetryRefreshActive = false
-    @ObservationIgnored var storageRefreshTask: Task<Void, Never>?
-    @ObservationIgnored var storageRefreshGeneration: UInt64 = 0
-    @ObservationIgnored var storageRefreshInFlightSignature: String?
-    @ObservationIgnored var storageRefreshInFlightRequestKey: String?
-    @ObservationIgnored var lastStorageRefreshSignature: String?
-    @ObservationIgnored var lastStorageRefreshRequestKey: String?
-    @ObservationIgnored var lastStorageRefreshAt: Date?
-    @ObservationIgnored var managedCodexAccountsForStorageOverride: [ManagedCodexAccount]?
-    @ObservationIgnored private var pathDebugRefreshTask: Task<Void, Never>?
-    @ObservationIgnored var resetBoundaryRefreshTask: Task<Void, Never>?
-    @ObservationIgnored var scheduledResetBoundaryRefreshAt: Date?
-    @ObservationIgnored var attemptedResetBoundaryRefreshes: Set<Date> = []
-    @ObservationIgnored var codexPlanHistoryBackfillTask: Task<Void, Never>?
-    @ObservationIgnored let historicalUsageHistoryStore: HistoricalUsageHistoryStore
-    @ObservationIgnored let planUtilizationHistoryStore: PlanUtilizationHistoryStore
-    @ObservationIgnored let codexAccountUsageSnapshotStore: (any CodexAccountUsageSnapshotStoring)?
-    @ObservationIgnored var codexHistoricalDataset: CodexHistoricalDataset?
-    @ObservationIgnored var codexHistoricalDatasetAccountKey: String?
-    @ObservationIgnored var lastKnownResetSnapshots: [ProviderInstanceID: UsageSnapshot] = [:]
-    @ObservationIgnored var deepseekProfileTransition: DeepSeekProfileTransition?
-    @ObservationIgnored var sessionQuotaTransitionStates: [ProviderInstanceID: SessionQuotaTransitionState] = [:]
-    @ObservationIgnored var codexSessionQuotaBaselineRequirement: CodexSessionQuotaBaselineRequirement?
+    @PerceptionIgnored private(set) var lastCodingActivityAt: Date?
+    @PerceptionIgnored var adaptiveRefreshScheduledAt: Date?
+    @PerceptionIgnored var tokenRefreshSequenceTask: Task<Void, Never>?
+    @PerceptionIgnored var tokenRefreshSequenceToken: UUID?
+    @PerceptionIgnored var tokenRefreshSequenceProvider: ProviderInstanceID?
+    @PerceptionIgnored var tokenRefreshSequenceIsForcedAllPass = false
+    @PerceptionIgnored var pendingForcedTokenRefresh = false
+    @PerceptionIgnored var lastForcedTokenRefreshStartedAt: Date?
+    @PerceptionIgnored var tokenRefreshRetryProviders: Set<ProviderInstanceID> = []
+    @PerceptionIgnored var codexCostCatchUpTask: Task<Void, Never>?
+    @PerceptionIgnored var codexCostCatchUpToken: UUID?
+    @PerceptionIgnored var codexCostCatchUpScopeSignature: String?
+    @PerceptionIgnored var codexCostCatchUpMode: CodexCostCatchUpMode = .automatic
+    @PerceptionIgnored var codexCostCatchUpStopRequested = false
+    @PerceptionIgnored var codexCostCatchUpPassIsRunning = false
+    @PerceptionIgnored var spendDashboardCodexCostCatchUpTask: Task<Void, Never>?
+    @PerceptionIgnored var spendDashboardCodexCostCatchUpToken: UUID?
+    @PerceptionIgnored var spendDashboardCodexCostCatchUpScopeSignature: String?
+    @PerceptionIgnored var spendDashboardCodexCostCatchUpMode: CodexCostCatchUpMode = .automatic
+    @PerceptionIgnored var spendDashboardCodexCostCatchUpStopRequested = false
+    @PerceptionIgnored var spendDashboardCodexCostCatchUpPassIsRunning = false
+    @PerceptionIgnored var forcedRefreshEnrichmentTask: Task<Void, Never>?
+    @PerceptionIgnored var forcedRefreshEnrichmentToken: UUID?
+    @PerceptionIgnored var pendingForcedRefreshEnrichmentTask: Task<Void, Never>?
+    @PerceptionIgnored var pendingForcedRefreshEnrichmentToken: UUID?
+    @PerceptionIgnored var forcedRefreshEnrichmentGeneration: UInt64 = 0
+    @PerceptionIgnored var requiredRefreshTask: Task<Bool, Never>?
+    @PerceptionIgnored var requiredRefreshTaskToken: UUID?
+    @PerceptionIgnored var pendingRequiredRefreshRequest: RequiredRefreshRequest?
+    @PerceptionIgnored var requiredRefreshRequestGeneration: UInt64 = 0
+    @PerceptionIgnored var requiredRefreshCompletedGeneration: UInt64 = 0
+    @PerceptionIgnored var memoryPressureReliefTask: Task<Void, Never>?
+    @PerceptionIgnored var startupConnectivityRetryTask: Task<Void, Never>?
+    @PerceptionIgnored var startupConnectivityRetryNeeded = false
+    @PerceptionIgnored var startupConnectivityRetryRefreshActive = false
+    @PerceptionIgnored var storageRefreshTask: Task<Void, Never>?
+    @PerceptionIgnored var storageRefreshGeneration: UInt64 = 0
+    @PerceptionIgnored var storageRefreshInFlightSignature: String?
+    @PerceptionIgnored var storageRefreshInFlightRequestKey: String?
+    @PerceptionIgnored var lastStorageRefreshSignature: String?
+    @PerceptionIgnored var lastStorageRefreshRequestKey: String?
+    @PerceptionIgnored var lastStorageRefreshAt: Date?
+    @PerceptionIgnored var managedCodexAccountsForStorageOverride: [ManagedCodexAccount]?
+    @PerceptionIgnored private var pathDebugRefreshTask: Task<Void, Never>?
+    @PerceptionIgnored var resetBoundaryRefreshTask: Task<Void, Never>?
+    @PerceptionIgnored var scheduledResetBoundaryRefreshAt: Date?
+    @PerceptionIgnored var attemptedResetBoundaryRefreshes: Set<Date> = []
+    @PerceptionIgnored var codexPlanHistoryBackfillTask: Task<Void, Never>?
+    @PerceptionIgnored let historicalUsageHistoryStore: HistoricalUsageHistoryStore
+    @PerceptionIgnored let planUtilizationHistoryStore: PlanUtilizationHistoryStore
+    @PerceptionIgnored let codexAccountUsageSnapshotStore: (any CodexAccountUsageSnapshotStoring)?
+    @PerceptionIgnored var codexHistoricalDataset: CodexHistoricalDataset?
+    @PerceptionIgnored var codexHistoricalDatasetAccountKey: String?
+    @PerceptionIgnored var lastKnownResetSnapshots: [ProviderInstanceID: UsageSnapshot] = [:]
+    @PerceptionIgnored var deepseekProfileTransition: DeepSeekProfileTransition?
+    @PerceptionIgnored var sessionQuotaTransitionStates: [ProviderInstanceID: SessionQuotaTransitionState] = [:]
+    @PerceptionIgnored var codexSessionQuotaBaselineRequirement: CodexSessionQuotaBaselineRequirement?
     var codexSessionQuotaBaselineRequired: Bool {
         self.codexSessionQuotaBaselineRequirement != nil
     }
 
-    @ObservationIgnored var quotaWarningState: [QuotaWarningStateKey: QuotaWarningState] = [:]
-    @ObservationIgnored let hookRateLimiter = HookRateLimiter()
-    @ObservationIgnored var providerStatusHadIssue: [ProviderInstanceID: Bool] = [:]
+    @PerceptionIgnored var quotaWarningState: [QuotaWarningStateKey: QuotaWarningState] = [:]
+    @PerceptionIgnored let hookRateLimiter = HookRateLimiter()
+    @PerceptionIgnored var providerStatusHadIssue: [ProviderInstanceID: Bool] = [:]
     /// Last observed usage fraction (0...1) per account and quota-warning lane, used
     /// to detect upward crossings of a quota_low hook rule's own threshold.
-    @ObservationIgnored var quotaLowHookUsage: [QuotaWarningStateKey: Double] = [:]
-    @ObservationIgnored var quotaLowHookConfigRevision: Int?
-    @ObservationIgnored var predictivePaceWarningNotifiedKeys: Set<PredictivePaceWarningStateKey> = []
-    @ObservationIgnored var lastPermissionPromptNotificationAt: [ProviderInstanceID: Date] = [:]
-    @ObservationIgnored var lastTokenFetchAt: [ProviderInstanceID: Date] = [:]
-    @ObservationIgnored var lastTokenFetchScope: [ProviderInstanceID: String] = [:]
-    @ObservationIgnored var planUtilizationHistory: [ProviderInstanceID: PlanUtilizationHistoryBuckets] = [:]
-    @ObservationIgnored var sessionEquivalentBurnCache: [ProviderInstanceID: SessionEquivalentBurnCacheEntry] = [:]
-    @ObservationIgnored var sessionEquivalentHistoryScanCount: Int = 0
+    @PerceptionIgnored var quotaLowHookUsage: [QuotaWarningStateKey: Double] = [:]
+    @PerceptionIgnored var quotaLowHookConfigRevision: Int?
+    @PerceptionIgnored var predictivePaceWarningNotifiedKeys: Set<PredictivePaceWarningStateKey> = []
+    @PerceptionIgnored var lastPermissionPromptNotificationAt: [ProviderInstanceID: Date] = [:]
+    @PerceptionIgnored var lastTokenFetchAt: [ProviderInstanceID: Date] = [:]
+    @PerceptionIgnored var lastTokenFetchScope: [ProviderInstanceID: String] = [:]
+    @PerceptionIgnored var planUtilizationHistory: [ProviderInstanceID: PlanUtilizationHistoryBuckets] = [:]
+    @PerceptionIgnored var sessionEquivalentBurnCache: [ProviderInstanceID: SessionEquivalentBurnCacheEntry] = [:]
+    @PerceptionIgnored var sessionEquivalentHistoryScanCount: Int = 0
 
     /// Background load task; cleared on deinit and on the cancel test seam.
-    @ObservationIgnored var planUtilizationHistoryLoadTask: Task<Void, Never>?
+    @PerceptionIgnored var planUtilizationHistoryLoadTask: Task<Void, Never>?
     /// Set once after the load completes. Gates mutation paths and sync menu
     /// accessors so they cannot race the decode or write empty history back to disk.
-    @ObservationIgnored var planUtilizationHistoryLoaded: Bool = false
-    @ObservationIgnored var sessionLimitResetDetectorStates: [String: LimitResetDetectorState] = [:]
-    @ObservationIgnored var weeklyLimitResetDetectorStates: [String: LimitResetDetectorState] = [:]
-    @ObservationIgnored private var hasCompletedInitialRefresh: Bool = false
-    @ObservationIgnored private let providerAvailabilityCacheTTL: TimeInterval = 1
-    @ObservationIgnored let accountInfoCacheTTL: TimeInterval = 30
+    @PerceptionIgnored var planUtilizationHistoryLoaded: Bool = false
+    @PerceptionIgnored var sessionLimitResetDetectorStates: [String: LimitResetDetectorState] = [:]
+    @PerceptionIgnored var weeklyLimitResetDetectorStates: [String: LimitResetDetectorState] = [:]
+    @PerceptionIgnored private var hasCompletedInitialRefresh: Bool = false
+    @PerceptionIgnored private let providerAvailabilityCacheTTL: TimeInterval = 1
+    @PerceptionIgnored let accountInfoCacheTTL: TimeInterval = 30
     /// Energy/WidgetKit floor for expensive local-history scans and their additional snapshot publications.
     /// Faster provider refreshes still update quota/status normally, but reuse token-cost history within this TTL.
     static let minimumTokenFetchTTL: TimeInterval = 15 * 60
@@ -448,9 +448,9 @@ final class UsageStore {
             lowPowerModeEnabled: lowPowerModeEnabled)
     }
 
-    @ObservationIgnored let tokenFetchTimeout: TimeInterval = 10 * 60
-    @ObservationIgnored let startupBehavior: StartupBehavior
-    @ObservationIgnored let planUtilizationPersistenceCoordinator: PlanUtilizationHistoryPersistenceCoordinator
+    @PerceptionIgnored let tokenFetchTimeout: TimeInterval = 10 * 60
+    @PerceptionIgnored let startupBehavior: StartupBehavior
+    @PerceptionIgnored let planUtilizationPersistenceCoordinator: PlanUtilizationHistoryPersistenceCoordinator
 
     init(
         fetcher: UsageFetcher,
@@ -704,7 +704,7 @@ final class UsageStore {
     }
 
     #if DEBUG
-    @ObservationIgnored private(set) var completedRefreshCountForTesting = 0
+    @PerceptionIgnored private(set) var completedRefreshCountForTesting = 0
     #endif
 
     @discardableResult
@@ -856,9 +856,9 @@ final class UsageStore {
     }
 
     #if DEBUG
-    @ObservationIgnored private(set) var refreshTimerSleepOverrideForTesting: Duration?
-    @ObservationIgnored private(set) var fixedRefreshIntervalForTesting: TimeInterval?
-    @ObservationIgnored var adaptiveRefreshComputedIntervalForTesting: TimeInterval?
+    @PerceptionIgnored private(set) var refreshTimerSleepOverrideForTesting: Duration?
+    @PerceptionIgnored private(set) var fixedRefreshIntervalForTesting: TimeInterval?
+    @PerceptionIgnored var adaptiveRefreshComputedIntervalForTesting: TimeInterval?
 
     /// Sets this store's timer sleep override and restarts the timer with it applied, so tests can
     /// observe multiple fixed/adaptive ticks without waiting real minutes. The reason/delay a tick

@@ -2,6 +2,7 @@ import AppKit
 import CodexBarCore
 import CoreTransferable
 import SwiftUI
+import Perception
 import UniformTypeIdentifiers
 
 extension UTType {
@@ -13,7 +14,7 @@ struct MenuBarLayoutPosition: Codable, Hashable, Sendable {
     let index: Int
 }
 
-struct MenuBarLayoutDragItem: Codable, Hashable, Transferable, Sendable {
+struct MenuBarLayoutDragItem: Codable, Hashable, Sendable {
     enum Content: Codable, Hashable, Sendable {
         case token(MenuBarLayoutToken)
         case lineBreak
@@ -22,10 +23,6 @@ struct MenuBarLayoutDragItem: Codable, Hashable, Transferable, Sendable {
     let content: Content
     let source: MenuBarLayoutPosition?
     let sourceLayout: MenuBarLayout?
-
-    static var transferRepresentation: some TransferRepresentation {
-        CodableRepresentation(contentType: .codexBarMenuLayoutItem)
-    }
 
     static func palette(_ component: MenuBarLayoutToken) -> Self {
         Self(content: .token(component), source: nil, sourceLayout: nil)
@@ -41,6 +38,35 @@ struct MenuBarLayoutDragItem: Codable, Hashable, Transferable, Sendable {
     }
 
     static let lineBreak = Self(content: .lineBreak, source: nil, sourceLayout: nil)
+}
+
+@available(macOS 13, *)
+extension MenuBarLayoutDragItem: Transferable {
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .codexBarMenuLayoutItem)
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func codexbarDraggable(_ item: MenuBarLayoutDragItem) -> some View {
+        if #available(macOS 13, *) {
+            self.draggable(item)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func codexbarDropDestination(
+        action: @escaping ([MenuBarLayoutDragItem], CGPoint) -> Bool) -> some View
+    {
+        if #available(macOS 13, *) {
+            self.dropDestination(for: MenuBarLayoutDragItem.self, action: action)
+        } else {
+            self
+        }
+    }
 }
 
 enum MenuBarLayoutEditorMutations {
@@ -170,8 +196,8 @@ private struct MenuBarLayoutPaletteGroup: Identifiable {
 
 @MainActor
 struct MenuBarLayoutEditor: View {
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
+    @Perception.Bindable var settings: SettingsStore
+    @Perception.Bindable var store: UsageStore
 
     @State private var scope: MenuBarLayoutEditorScope = .all
     @State private var selectedPosition: MenuBarLayoutPosition?
@@ -271,29 +297,34 @@ struct MenuBarLayoutEditor: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            self.header
-            self.preview
-            self.layoutStrip
-            self.removeDropTarget
 
-            Divider()
+        WithPerceptionTracking {
+            VStack(alignment: .leading, spacing: 12) {
+                self.header
+                self.preview
+                self.layoutStrip
+                self.removeDropTarget
 
-            ForEach(self.paletteGroups) { group in
-                self.palette(group)
+                Divider()
+
+                ForEach(self.paletteGroups) { group in
+                    self.palette(group)
+                }
+
+                Divider()
+
+                self.displayOptions
+            }
+            .padding(.vertical, 4)
+            .onDeleteCommand {
+                self.removeSelectedToken()
+            }
+            .onChange(of: self.scope) { _ in
+                self.selectedPosition = nil
             }
 
-            Divider()
+        }
 
-            self.displayOptions
-        }
-        .padding(.vertical, 4)
-        .onDeleteCommand {
-            self.removeSelectedToken()
-        }
-        .onChange(of: self.scope) { _, _ in
-            self.selectedPosition = nil
-        }
     }
 
     private var header: some View {
@@ -415,12 +446,8 @@ struct MenuBarLayoutEditor: View {
                     }
                     .buttonStyle(.plain)
                     .focusable()
-                    .onKeyPress(keys: [.space, .return], phases: [.down]) { _ in
-                        self.selectedPosition = position
-                        return .handled
-                    }
-                    .draggable(MenuBarLayoutDragItem.placed(token, at: position, in: self.layout))
-                    .dropDestination(for: MenuBarLayoutDragItem.self) { items, _ in
+                    .codexbarDraggable(MenuBarLayoutDragItem.placed(token, at: position, in: self.layout))
+                    .codexbarDropDestination { items, _ in
                         self.insert(items.first, at: position)
                     }
                     .accessibilityLabel(token.editorAccessibilityLabel(provider: self.persistenceProvider))
@@ -448,7 +475,7 @@ struct MenuBarLayoutEditor: View {
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                 .foregroundStyle(Color.secondary.opacity(0.35)))
-        .dropDestination(for: MenuBarLayoutDragItem.self) { items, _ in
+        .codexbarDropDestination { items, _ in
             self.insert(
                 items.first,
                 at: MenuBarLayoutPosition(line: lineIndex, index: self.layout.lines[lineIndex].count))
@@ -468,7 +495,7 @@ struct MenuBarLayoutEditor: View {
         .background(
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(.secondary.opacity(0.06)))
-        .dropDestination(for: MenuBarLayoutDragItem.self) { items, _ in
+        .codexbarDropDestination { items, _ in
             guard let item = items.first, item.source != nil else { return false }
             let updated = MenuBarLayoutEditorMutations.remove(item, from: self.layout)
             guard updated != self.layout else { return false }
@@ -500,11 +527,7 @@ struct MenuBarLayoutEditor: View {
                     }
                     .buttonStyle(.plain)
                     .focusable()
-                    .onKeyPress(keys: [.space, .return], phases: [.down]) { _ in
-                        self.write(MenuBarLayoutEditorMutations.append(token, to: self.layout))
-                        return .handled
-                    }
-                    .draggable(MenuBarLayoutDragItem.palette(token))
+                    .codexbarDraggable(MenuBarLayoutDragItem.palette(token))
                     .accessibilityLabel(token.editorAccessibilityLabel(provider: self.persistenceProvider))
                     .accessibilityHint(L("menu_bar_layout_palette_hint"))
                 }
@@ -519,11 +542,7 @@ struct MenuBarLayoutEditor: View {
                     }
                     .buttonStyle(.plain)
                     .focusable()
-                    .onKeyPress(keys: [.space, .return], phases: [.down]) { _ in
-                        self.write(MenuBarLayoutEditorMutations.addLineBreak(to: self.layout))
-                        return .handled
-                    }
-                    .draggable(MenuBarLayoutDragItem.lineBreak)
+                    .codexbarDraggable(MenuBarLayoutDragItem.lineBreak)
                     .disabled(self.layout.lines.count == 2)
                     .accessibilityLabel(L("menu_bar_layout_token_line_break"))
                     .accessibilityHint(L("menu_bar_layout_palette_hint"))
@@ -597,22 +616,27 @@ private struct MenuBarLayoutChipLabel: View {
     let isSelected: Bool
 
     var body: some View {
-        HStack(spacing: 5) {
-            Image(systemName: self.systemImage)
-                .font(.caption.weight(.medium))
-            Text(self.title)
-                .font(.caption)
-                .lineLimit(1)
+
+        WithPerceptionTracking {
+            HStack(spacing: 5) {
+                Image(systemName: self.systemImage)
+                    .font(.caption.weight(.medium))
+                Text(self.title)
+                    .font(.caption)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .foregroundStyle(self.isSelected ? Color.white : Color.primary)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(self.isSelected ? Color.accentColor : Color.secondary.opacity(0.12)))
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(self.isSelected ? Color.clear : Color.secondary.opacity(0.2), lineWidth: 1))
+
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .foregroundStyle(self.isSelected ? Color.white : Color.primary)
-        .background(
-            Capsule(style: .continuous)
-                .fill(self.isSelected ? Color.accentColor : Color.secondary.opacity(0.12)))
-        .overlay(
-            Capsule(style: .continuous)
-                .stroke(self.isSelected ? Color.clear : Color.secondary.opacity(0.2), lineWidth: 1))
+
     }
 }
 
@@ -620,30 +644,35 @@ private struct MenuBarLayoutChipLabel: View {
 struct MenuBarLayoutPreview: View {
     let layout: MenuBarLayout
     let provider: UsageProvider?
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
+    @Perception.Bindable var settings: SettingsStore
+    @Perception.Bindable var store: UsageStore
 
     private let renderer = MenuBarLayoutRenderer()
 
     var body: some View {
-        let provider = self.provider ?? .codex
-        let snapshot = self.store.snapshot(for: provider.instanceID)
-        let data = snapshot.map { self.liveData(provider: provider, snapshot: $0) }
-            ?? self.representativeData(provider: provider)
-        let icon = ProviderBrandIcon.image(for: provider)
-        let minute = Date(timeIntervalSince1970: floor(Date().timeIntervalSince1970 / 60) * 60)
-        let rendered = self.renderer.render(
-            layout: self.layout,
-            data: data,
-            icon: icon,
-            options: MenuBarLayoutRenderOptions(
-                size: self.settings.menuBarLayoutSize,
-                highContrast: self.settings.menuBarHighContrastOnInactiveDisplays,
-                showUsed: self.settings.usageBarsShowUsed,
-                appearanceName: "preview",
-                isDebugApp: false,
-                now: minute))
-        MenuBarLayoutPreviewText(rendered: rendered)
+
+        WithPerceptionTracking {
+            let provider = self.provider ?? .codex
+            let snapshot = self.store.snapshot(for: provider.instanceID)
+            let data = snapshot.map { self.liveData(provider: provider, snapshot: $0) }
+                ?? self.representativeData(provider: provider)
+            let icon = ProviderBrandIcon.image(for: provider)
+            let minute = Date(timeIntervalSince1970: floor(Date().timeIntervalSince1970 / 60) * 60)
+            let rendered = self.renderer.render(
+                layout: self.layout,
+                data: data,
+                icon: icon,
+                options: MenuBarLayoutRenderOptions(
+                    size: self.settings.menuBarLayoutSize,
+                    highContrast: self.settings.menuBarHighContrastOnInactiveDisplays,
+                    showUsed: self.settings.usageBarsShowUsed,
+                    appearanceName: "preview",
+                    isDebugApp: false,
+                    now: minute))
+            MenuBarLayoutPreviewText(rendered: rendered)
+
+        }
+
     }
 
     func liveData(provider: UsageProvider, snapshot: UsageSnapshot) -> MenuBarLayoutRenderData {

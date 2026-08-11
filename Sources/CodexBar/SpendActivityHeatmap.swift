@@ -374,7 +374,7 @@ struct SpendActivityHeatmapView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .onChange(of: self.points) { _, points in
+        .onChange(of: self.points) { points in
             self.series = SpendActivitySeries.make(from: points, now: self.now)
         }
     }
@@ -491,7 +491,7 @@ private struct SpendActivityDailyGrid: View {
         .focusable()
         .focused(self.$isKeyboardFocused)
         .onMoveCommand(perform: self.moveKeyboardSelection)
-        .onChange(of: self.isKeyboardFocused) { _, isFocused in
+        .onChange(of: self.isKeyboardFocused) { isFocused in
             if isFocused, self.keyboardIndex == nil {
                 self.keyboardIndex = self.lastVisibleIndex
             }

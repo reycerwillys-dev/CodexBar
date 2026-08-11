@@ -1,7 +1,7 @@
 import AppKit
 import CodexBarCore
 import KeyboardShortcuts
-import Observation
+import Perception
 import QuartzCore
 import Security
 import SwiftUI
@@ -105,29 +105,12 @@ struct CodexBarApp: App {
 
     @SceneBuilder
     var body: some Scene {
-        // Hidden 1×1 window to keep SwiftUI's lifecycle alive so `Settings` scene
-        // shows the native toolbar tabs even though the UI is AppKit-based.
+        // Hidden 1×1 window to keep SwiftUI's lifecycle alive. Settings are hosted
+        // in an AppKit window so the app can run on Monterey, where SwiftUI's
+        // native `Settings` scene is not available.
         WindowGroup("CodexBarLifecycleKeepalive") {
             HiddenWindowView()
         }
-        .defaultSize(width: 20, height: 20)
-        .windowStyle(.hiddenTitleBar)
-
-        Settings {
-            PreferencesView(
-                settings: self.settings,
-                store: self.store,
-                cloudSyncState: self.appDelegate.cloudSyncState,
-                updater: self.appDelegate.updaterController,
-                selection: self.preferencesSelection,
-                managedCodexAccountCoordinator: self.managedCodexAccountCoordinator,
-                codexAccountPromotionCoordinator: self.codexAccountPromotionCoordinator,
-                runProviderLoginFlow: { provider in
-                    await self.appDelegate.runProviderLoginFlow(provider)
-                })
-        }
-        .defaultSize(width: SettingsPane.windowWidth, height: SettingsPane.windowHeight)
-        .windowResizability(.contentMinSize)
     }
 
     private func openSettings(pane: SettingsPane) {
@@ -182,7 +165,7 @@ final class DisabledUpdaterController: UpdaterProviding {
 }
 
 @MainActor
-@Observable
+@Perceptible
 final class UpdateStatus {
     static let disabled = UpdateStatus()
     var isUpdateReady: Bool
@@ -402,6 +385,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var codexAccountPromotionCoordinator: CodexAccountPromotionCoordinator?
     private var cloudSyncCoordinator: CloudSyncCoordinator?
     private var hasInstalledLimitResetObservers = false
+    private var settingsOpenObserver: NSObjectProtocol?
     #if DEBUG
     private var debugMemoryPressureObserver: NSObjectProtocol?
     #endif
@@ -417,6 +401,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.managedCodexAccountCoordinator = dependencies.managedCodexAccountCoordinator
         self.codexAccountPromotionCoordinator = dependencies.codexAccountPromotionCoordinator
         self.cloudSyncCoordinator = CloudSyncCoordinator(settings: dependencies.settings, state: self.cloudSyncState)
+        if self.settingsOpenObserver == nil {
+            self.settingsOpenObserver = NotificationCenter.default.addObserver(
+                forName: .codexbarOpenSettings,
+                object: nil,
+                queue: .main)
+            { [weak self] notification in
+                guard let request = notification.object as? SettingsOpenRequest else { return }
+                MainActor.assumeIsolated {
+                    request.wasHandled = self?.showSettingsWindow() ?? false
+                }
+            }
+        }
     }
 
     func applicationWillFinishLaunching(_ notification: Notification) {
@@ -466,6 +462,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        if let settingsOpenObserver = self.settingsOpenObserver {
+            NotificationCenter.default.removeObserver(settingsOpenObserver)
+            self.settingsOpenObserver = nil
+        }
         self.cloudSyncCoordinator?.stop()
         self.memoryPressureMonitor.stop()
         #if DEBUG
@@ -475,6 +475,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.confettiOverlayController.dismiss()
         self.dismissAppKitWindowsForShutdown()
         self.terminateActiveProcessesForAppShutdown()
+    }
+
+    private var settingsWindowController: CodexBarSettingsWindowController?
+
+    @discardableResult
+    private func showSettingsWindow() -> Bool {
+        guard let store = self.store,
+              let settings = self.settings,
+              let selection = self.preferencesSelection,
+              let managedCodexAccountCoordinator = self.managedCodexAccountCoordinator,
+              let codexAccountPromotionCoordinator = self.codexAccountPromotionCoordinator
+        else {
+            return false
+        }
+
+        if self.settingsWindowController == nil {
+            self.settingsWindowController = CodexBarSettingsWindowController(
+                settings: settings,
+                store: store,
+                cloudSyncState: self.cloudSyncState,
+                updater: self.updaterController,
+                selection: selection,
+                managedCodexAccountCoordinator: managedCodexAccountCoordinator,
+                codexAccountPromotionCoordinator: codexAccountPromotionCoordinator,
+                runProviderLoginFlow: { [weak self] provider in
+                    await self?.runProviderLoginFlow(provider)
+                })
+        }
+        self.settingsWindowController?.showWindow(nil)
+        self.settingsWindowController?.window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        return self.settingsWindowController?.window != nil
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {

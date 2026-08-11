@@ -1,33 +1,39 @@
 import AppKit
 import CodexBarCore
 import SwiftUI
+import Perception
 
 /// System Settings-style sidebar: fixed app panes on top, one row per provider below.
 @MainActor
 struct SettingsSidebarView: View {
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
+    @Perception.Bindable var settings: SettingsStore
+    @Perception.Bindable var store: UsageStore
     @Binding var selection: SettingsPane
     @State private var searchText = ""
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 6) {
-                SettingsSidebarSearchField(searchText: self.$searchText)
-                SettingsSidebarSortToggle(isOn: self.sortAlphabeticallyBinding)
+
+        WithPerceptionTracking {
+            VStack(spacing: 0) {
+                HStack(spacing: 6) {
+                    SettingsSidebarSearchField(searchText: self.$searchText)
+                    SettingsSidebarSortToggle(isOn: self.sortAlphabeticallyBinding)
+                }
+                .padding(.horizontal, 8)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
+
+                List(selection: self.selectionBinding) {
+                    self.appPanesSection
+                    self.providersSection
+                }
+                .listStyle(.sidebar)
+                .codexbarScrollContentBackgroundHidden()
             }
             .padding(.horizontal, 8)
-            .padding(.top, 16)
-            .padding(.bottom, 8)
 
-            List(selection: self.selectionBinding) {
-                self.appPanesSection
-                self.providersSection
-            }
-            .listStyle(.sidebar)
-            .scrollContentBackground(.hidden)
         }
-        .padding(.horizontal, 8)
+
     }
 
     private var appPanesSection: some View {
@@ -140,64 +146,76 @@ private struct SettingsSidebarPaneRow: View {
     let color: Color
 
     var body: some View {
-        HStack(spacing: 8) {
-            SettingsIconChip(systemImage: self.systemImage, color: self.color)
-            Text(self.pane.title)
+
+        WithPerceptionTracking {
+            HStack(spacing: 8) {
+                SettingsIconChip(systemImage: self.systemImage, color: self.color)
+                Text(self.pane.title)
+            }
+            .tag(self.pane)
+
         }
-        .tag(self.pane)
+
     }
 }
 
 @MainActor
 private struct SettingsSidebarAboutRow: View {
     var body: some View {
-        HStack(spacing: 8) {
-            if let icon = NSApplication.shared.applicationIconImage {
-                Image(nsImage: icon)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: SettingsIconChip.side, height: SettingsIconChip.side)
-                    .accessibilityHidden(true)
-            } else {
-                SettingsIconChip(systemImage: "info.circle.fill", color: .green)
+        WithPerceptionTracking {
+            HStack(spacing: 8) {
+                if let icon = NSApplication.shared.applicationIconImage {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: SettingsIconChip.side, height: SettingsIconChip.side)
+                        .accessibilityHidden(true)
+                } else {
+                    SettingsIconChip(systemImage: "info.circle.fill", color: .green)
+                }
+                Text(SettingsPane.about.title)
             }
-            Text(SettingsPane.about.title)
+            .tag(SettingsPane.about)
         }
-        .tag(SettingsPane.about)
     }
 }
 
 @MainActor
 private struct SettingsSidebarProviderRow: View {
     let provider: UsageProvider
-    @Bindable var store: UsageStore
+    @Perception.Bindable var store: UsageStore
     @Binding var isEnabled: Bool
 
     var body: some View {
-        HStack(spacing: 8) {
-            SettingsSidebarBrandIcon(provider: self.provider, isEnabled: self.isEnabled)
 
-            Text(self.store.metadata(for: self.provider).displayName)
-                .foregroundStyle(self.isEnabled ? .primary : .secondary)
+        WithPerceptionTracking {
+            HStack(spacing: 8) {
+                SettingsSidebarBrandIcon(provider: self.provider, isEnabled: self.isEnabled)
 
-            Spacer(minLength: 4)
+                Text(self.store.metadata(for: self.provider).displayName)
+                    .foregroundStyle(self.isEnabled ? .primary : .secondary)
 
-            if self.store.refreshingProviders.contains(self.provider.instanceID) {
-                ProgressView()
-                    .controlSize(.mini)
+                Spacer(minLength: 4)
+
+                if self.store.refreshingProviders.contains(self.provider.instanceID) {
+                    ProgressView()
+                        .controlSize(.mini)
+                }
+
+                if self.isEnabled, self.store.statusChecksEnabled {
+                    SettingsSidebarStatusDot(indicator: self.store.statusIndicator(for: self.provider))
+                }
             }
-
-            if self.isEnabled, self.store.statusChecksEnabled {
-                SettingsSidebarStatusDot(indicator: self.store.statusIndicator(for: self.provider))
+            .opacity(self.isEnabled ? 1 : 0.62)
+            .contextMenu {
+                Button(self.isEnabled ? L("Disable") : L("Enable")) {
+                    self.isEnabled.toggle()
+                }
             }
+            .accessibilityLabel(self.accessibilityLabel)
+
         }
-        .opacity(self.isEnabled ? 1 : 0.62)
-        .contextMenu {
-            Button(self.isEnabled ? L("Disable") : L("Enable")) {
-                self.isEnabled.toggle()
-            }
-        }
-        .accessibilityLabel(self.accessibilityLabel)
+
     }
 
     private var accessibilityLabel: String {
@@ -212,20 +230,25 @@ private struct SettingsSidebarBrandIcon: View {
     let isEnabled: Bool
 
     var body: some View {
-        Group {
-            if let brand = ProviderBrandIcon.image(for: self.provider) {
-                Image(nsImage: brand)
-                    .resizable()
-                    .scaledToFit()
-            } else {
-                Image(systemName: "circle.dotted")
-                    .resizable()
-                    .scaledToFit()
+
+        WithPerceptionTracking {
+            Group {
+                if let brand = ProviderBrandIcon.image(for: self.provider) {
+                    Image(nsImage: brand)
+                        .resizable()
+                        .scaledToFit()
+                } else {
+                    Image(systemName: "circle.dotted")
+                        .resizable()
+                        .scaledToFit()
+                }
             }
+            .frame(width: 16, height: 16)
+            .foregroundStyle(self.isEnabled ? .primary : .secondary)
+            .accessibilityHidden(true)
+
         }
-        .frame(width: 16, height: 16)
-        .foregroundStyle(self.isEnabled ? .primary : .secondary)
-        .accessibilityHidden(true)
+
     }
 }
 
@@ -233,10 +256,15 @@ private struct SettingsSidebarStatusDot: View {
     let indicator: ProviderStatusIndicator
 
     var body: some View {
-        Circle()
-            .fill(self.statusColor)
-            .frame(width: 6, height: 6)
-            .accessibilityHidden(true)
+
+        WithPerceptionTracking {
+            Circle()
+                .fill(self.statusColor)
+                .frame(width: 6, height: 6)
+                .accessibilityHidden(true)
+
+        }
+
     }
 
     private var statusColor: Color {
@@ -255,34 +283,39 @@ private struct SettingsSidebarSearchField: View {
     @Binding var searchText: String
 
     var body: some View {
-        HStack(spacing: 5) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
 
-            TextField(L("Search providers"), text: self.$searchText)
-                .textFieldStyle(.plain)
+        WithPerceptionTracking {
+            HStack(spacing: 5) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
 
-            if !self.searchText.isEmpty {
-                Button {
-                    self.searchText = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel(L("Clear"))
+                TextField(L("Search providers"), text: self.$searchText)
+                    .textFieldStyle(.plain)
+
+                if !self.searchText.isEmpty {
+                    Button {
+                        self.searchText = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel(L("Clear"))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
+            .font(.callout)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color(nsColor: .textBackgroundColor).opacity(0.6)))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(Color(nsColor: .separatorColor).opacity(0.6), lineWidth: 1))
+
         }
-        .font(.callout)
-        .padding(.horizontal, 7)
-        .padding(.vertical, 4)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(Color(nsColor: .textBackgroundColor).opacity(0.6)))
-        .overlay(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.6), lineWidth: 1))
+
     }
 }
 
@@ -290,20 +323,25 @@ private struct SettingsSidebarSortToggle: View {
     @Binding var isOn: Bool
 
     var body: some View {
-        Button {
-            self.isOn.toggle()
-        } label: {
-            Image(systemName: "arrow.up.arrow.down")
-                .font(.callout)
-                .foregroundStyle(self.isOn ? Color.accentColor : Color.secondary)
-                .frame(width: 24, height: 24)
-                .contentShape(Rectangle())
+
+        WithPerceptionTracking {
+            Button {
+                self.isOn.toggle()
+            } label: {
+                Image(systemName: "arrow.up.arrow.down")
+                    .font(.callout)
+                    .foregroundStyle(self.isOn ? Color.accentColor : Color.secondary)
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(self.isOn
+                ? L("Sorted alphabetically (enabled first) — click to use your custom order")
+                : L("Sort providers alphabetically (enabled first)"))
+            .accessibilityLabel(L("Sort providers alphabetically"))
+            .accessibilityAddTraits(self.isOn ? .isSelected : [])
+
         }
-        .buttonStyle(.plain)
-        .help(self.isOn
-            ? L("Sorted alphabetically (enabled first) — click to use your custom order")
-            : L("Sort providers alphabetically (enabled first)"))
-        .accessibilityLabel(L("Sort providers alphabetically"))
-        .accessibilityAddTraits(self.isOn ? .isSelected : [])
+
     }
 }

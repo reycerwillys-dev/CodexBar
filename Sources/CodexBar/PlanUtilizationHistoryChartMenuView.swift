@@ -93,6 +93,15 @@ struct PlanUtilizationHistoryChartMenuView: View {
     }
 
     var body: some View {
+        if #available(macOS 13, *) {
+            self.chartBody
+        } else {
+            self.macOS12Fallback
+        }
+    }
+
+    @available(macOS 13, *)
+    private var chartBody: some View {
         let effectiveSelectedSeries = self.visibleSeries.first(where: { $0.id == self.selectedSeriesID })
             ?? self.visibleSeries.first
         let model = effectiveSelectedSeries.flatMap { self.modelsBySeriesID[$0.id] } ?? self.emptyModel
@@ -180,6 +189,17 @@ struct PlanUtilizationHistoryChartMenuView: View {
             self.selectedSeriesID = firstVisibleSeries.id
             self.selectedPointID = nil
         }
+    }
+
+    private var macOS12Fallback: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L("Spend unavailable"))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .frame(minWidth: self.width, maxWidth: .infinity, alignment: .topLeading)
     }
 
     private nonisolated static func visibleSeries(
@@ -740,10 +760,12 @@ struct PlanUtilizationHistoryChartMenuView: View {
     }
     #endif
 
+    @available(macOS 13, *)
     private func xValue(for index: Int) -> PlottableValue<Double> {
         .value(L("Series"), Double(index))
     }
 
+    @available(macOS 13, *)
     @ViewBuilder
     private func utilizationChart(model: Model) -> some View {
         if let xDomain = model.xDomain {
@@ -758,6 +780,7 @@ struct PlanUtilizationHistoryChartMenuView: View {
         }
     }
 
+    @available(macOS 13, *)
     @ChartContentBuilder
     private func utilizationChartContent(model: Model) -> some ChartContent {
         ForEach(model.points) { point in
@@ -791,6 +814,7 @@ struct PlanUtilizationHistoryChartMenuView: View {
         return Self.detailLine(point: activePoint, windowMinutes: windowMinutes)
     }
 
+    @available(macOS 13, *)
     private func updateSelection(
         location: CGPoint?,
         model: Model,

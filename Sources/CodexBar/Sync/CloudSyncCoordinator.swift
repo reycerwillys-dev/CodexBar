@@ -1,7 +1,7 @@
 import CloudKit
 import CodexBarCore
 import Foundation
-import Observation
+import Perception
 
 @MainActor
 final class CloudSyncCoordinator {
@@ -127,7 +127,7 @@ final class CloudSyncCoordinator {
     }
 
     private func observeSettings() {
-        withObservationTracking {
+        withPerceptionTracking {
             _ = self.settings.iCloudSyncEnabled
             _ = self.settings.iCloudSyncIncludeSecrets
             _ = self.settings.iCloudSyncSnapshotsEnabled

@@ -1,7 +1,7 @@
 import CloudKit
 import CodexBarCore
 import Foundation
-import Observation
+import Perception
 import Security
 
 enum SyncAvailability: Equatable, Sendable {
@@ -19,7 +19,7 @@ struct SyncStatus: Equatable, Sendable {
 }
 
 @MainActor
-@Observable
+@Perceptible
 final class CloudSyncState {
     var availability: SyncAvailability = .available
     var status = SyncStatus()

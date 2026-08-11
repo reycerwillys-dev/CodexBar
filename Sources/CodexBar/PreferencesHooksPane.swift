@@ -1,48 +1,54 @@
 import CodexBarCore
 import SwiftUI
+import Perception
 
 @MainActor
 struct HooksPane: View {
-    @Bindable var settings: SettingsStore
+    @Perception.Bindable var settings: SettingsStore
 
     var body: some View {
-        Form {
-            Section {
-                Toggle(isOn: self.enabledBinding) {
-                    SettingsRowLabel(L("hooks_enable_title"), subtitle: L("hooks_enable_subtitle"))
-                }
-                Label(L("hooks_trust_warning"), systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } header: {
-                Text(L("tab_hooks"))
-            }
 
-            Section {
-                if self.settings.hookRules.isEmpty {
-                    Text(L("hooks_empty"))
+        WithPerceptionTracking {
+            Form {
+                Section {
+                    Toggle(isOn: self.enabledBinding) {
+                        SettingsRowLabel(L("hooks_enable_title"), subtitle: L("hooks_enable_subtitle"))
+                    }
+                    Label(L("hooks_trust_warning"), systemImage: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                } else {
-                    ForEach(self.settings.hookRules) { rule in
-                        HookRuleRow(
-                            rule: self.binding(for: rule),
-                            onDelete: { self.settings.removeHookRule(id: rule.id) })
-                    }
+                        .fixedSize(horizontal: false, vertical: true)
+                } header: {
+                    Text(L("tab_hooks"))
                 }
 
-                Button {
-                    self.settings.addHookRule(HookRule(event: .quotaReached, executable: ""))
-                } label: {
-                    Label(L("hooks_add_rule"), systemImage: "plus")
+                Section {
+                    if self.settings.hookRules.isEmpty {
+                        Text(L("hooks_empty"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(self.settings.hookRules) { rule in
+                            HookRuleRow(
+                                rule: self.binding(for: rule),
+                                onDelete: { self.settings.removeHookRule(id: rule.id) })
+                        }
+                    }
+
+                    Button {
+                        self.settings.addHookRule(HookRule(event: .quotaReached, executable: ""))
+                    } label: {
+                        Label(L("hooks_add_rule"), systemImage: "plus")
+                    }
+                    .disabled(!HookEditorValidation.canAddRule(count: self.settings.hookRules.count))
+                } header: {
+                    Text(L("hooks_rules_header"))
                 }
-                .disabled(!HookEditorValidation.canAddRule(count: self.settings.hookRules.count))
-            } header: {
-                Text(L("hooks_rules_header"))
             }
+            .codexbarGroupedFormStyle()
+
         }
-        .formStyle(.grouped)
+
     }
 
     private var enabledBinding: Binding<Bool> {
@@ -71,97 +77,102 @@ private struct HookRuleRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Toggle(L("hooks_rule_enabled"), isOn: self.$rule.enabled)
+
+        WithPerceptionTracking {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Toggle(L("hooks_rule_enabled"), isOn: self.$rule.enabled)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.mini)
+
+                    Picker(L("hooks_event"), selection: self.$rule.event) {
+                        ForEach(HookEventType.allCases, id: \.self) { event in
+                            Text(event.rawValue).tag(event)
+                        }
+                    }
                     .labelsHidden()
-                    .toggleStyle(.switch)
-                    .controlSize(.mini)
 
-                Picker(L("hooks_event"), selection: self.$rule.event) {
-                    ForEach(HookEventType.allCases, id: \.self) { event in
-                        Text(event.rawValue).tag(event)
+                    Picker(L("hooks_provider"), selection: self.providerBinding) {
+                        Text(L("hooks_any_provider")).tag(String?.none)
+                        ForEach(UsageProvider.allCases, id: \.self) { provider in
+                            Text(ProviderDescriptorRegistry.descriptor(for: provider).metadata.displayName)
+                                .tag(String?.some(provider.rawValue))
+                        }
                     }
-                }
-                .labelsHidden()
+                    .labelsHidden()
 
-                Picker(L("hooks_provider"), selection: self.providerBinding) {
-                    Text(L("hooks_any_provider")).tag(String?.none)
-                    ForEach(UsageProvider.allCases, id: \.self) { provider in
-                        Text(ProviderDescriptorRegistry.descriptor(for: provider).metadata.displayName)
-                            .tag(String?.some(provider.rawValue))
-                    }
-                }
-                .labelsHidden()
-
-                Spacer()
-
-                Button(role: .destructive, action: self.onDelete) {
-                    Image(systemName: "trash")
-                }
-                .buttonStyle(.borderless)
-                .accessibilityLabel(L("hooks_delete_rule"))
-            }
-
-            if self.rule.event == .quotaLow {
-                HStack {
-                    Text(L("hooks_threshold"))
-                        .foregroundStyle(.secondary)
-                    TextField(L("hooks_threshold_placeholder"), value: self.thresholdPercentBinding, format: .number)
-                        .frame(width: 60)
-                    Text(verbatim: "%")
-                        .foregroundStyle(.secondary)
-                }
-                .font(.caption)
-            }
-
-            TextField(L("hooks_executable_placeholder"), text: self.$rule.executable)
-                .textFieldStyle(.roundedBorder)
-                .font(.system(.caption, design: .monospaced))
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(L("hooks_arguments_placeholder"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                     Spacer()
-                    Button {
-                        self.argumentRows.append(ArgumentRow(value: ""))
-                    } label: {
-                        Label(L("hooks_add_argument"), systemImage: "plus")
+
+                    Button(role: .destructive, action: self.onDelete) {
+                        Image(systemName: "trash")
                     }
                     .buttonStyle(.borderless)
-                    .controlSize(.small)
-                    .disabled(!HookEditorValidation.canAddArgument(count: self.argumentRows.count))
+                    .accessibilityLabel(L("hooks_delete_rule"))
                 }
 
-                ForEach(self.$argumentRows) { $argument in
+                if self.rule.event == .quotaLow {
                     HStack {
-                        TextField(L("hooks_argument_placeholder"), text: $argument.value)
-                            .textFieldStyle(.roundedBorder)
-                            .font(.system(.caption, design: .monospaced))
+                        Text(L("hooks_threshold"))
+                            .foregroundStyle(.secondary)
+                        TextField(L("hooks_threshold_placeholder"), value: self.thresholdPercentBinding, format: .number)
+                            .frame(width: 60)
+                        Text(verbatim: "%")
+                            .foregroundStyle(.secondary)
+                    }
+                    .font(.caption)
+                }
+
+                TextField(L("hooks_executable_placeholder"), text: self.$rule.executable)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(.caption, design: .monospaced))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(L("hooks_arguments_placeholder"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
                         Button {
-                            self.argumentRows.removeAll(where: { $0.id == argument.id })
+                            self.argumentRows.append(ArgumentRow(value: ""))
                         } label: {
-                            Image(systemName: "minus.circle")
+                            Label(L("hooks_add_argument"), systemImage: "plus")
                         }
                         .buttonStyle(.borderless)
-                        .accessibilityLabel(L("hooks_delete_argument"))
+                        .controlSize(.small)
+                        .disabled(!HookEditorValidation.canAddArgument(count: self.argumentRows.count))
+                    }
+
+                    ForEach(self.$argumentRows) { $argument in
+                        HStack {
+                            TextField(L("hooks_argument_placeholder"), text: $argument.value)
+                                .textFieldStyle(.roundedBorder)
+                                .font(.system(.caption, design: .monospaced))
+                            Button {
+                                self.argumentRows.removeAll(where: { $0.id == argument.id })
+                            } label: {
+                                Image(systemName: "minus.circle")
+                            }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel(L("hooks_delete_argument"))
+                        }
                     }
                 }
             }
-        }
-        .padding(.vertical, 4)
-        .onChange(of: self.argumentRows.map(\.value)) { _, arguments in
-            if self.rule.arguments != arguments {
-                self.rule.arguments = arguments
+            .padding(.vertical, 4)
+            .onChange(of: self.argumentRows.map(\.value)) { arguments in
+                if self.rule.arguments != arguments {
+                    self.rule.arguments = arguments
+                }
             }
-        }
-        .onChange(of: self.rule.arguments) { _, arguments in
-            if self.argumentRows.map(\.value) != arguments {
-                self.argumentRows = arguments.map(ArgumentRow.init(value:))
+            .onChange(of: self.rule.arguments) { arguments in
+                if self.argumentRows.map(\.value) != arguments {
+                    self.argumentRows = arguments.map(ArgumentRow.init(value:))
+                }
             }
+
         }
+
     }
 
     private var providerBinding: Binding<String?> {
