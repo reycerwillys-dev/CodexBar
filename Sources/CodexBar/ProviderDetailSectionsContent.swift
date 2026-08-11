@@ -35,8 +35,8 @@ struct ProviderDetailSectionsContent: View {
                     Spacer(minLength: 8)
                     VStack(alignment: .trailing, spacing: 1) {
                         Text(row.value)
-                            .foregroundStyle(MenuHighlightStyle.primary(self.isHighlighted))
                             .fontWeight(.medium)
+                            .foregroundStyle(MenuHighlightStyle.primary(self.isHighlighted))
                         if let secondaryValue = row.secondaryValue {
                             Text(secondaryValue)
                                 .font(.caption2)

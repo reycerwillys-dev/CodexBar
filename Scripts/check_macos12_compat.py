@@ -41,6 +41,7 @@ SOURCE_PREFILTER_MARKERS = (
     "openSettings",
     "containerBackground",
     "onKeyPress",
+    "ProposedViewSize",
     "OSAllocatedUnfairLock",
     "ExecutorJob",
     ".gmt",
@@ -261,6 +262,12 @@ GUARDED_RULES = (
         re.compile(r"\.onKeyPress\s*\("),
         "onKeyPress requires a macOS 14 availability boundary",
         14,
+    ),
+    Rule(
+        "proposed-view-size",
+        re.compile(r"\bProposedViewSize\b"),
+        "NSViewRepresentable ProposedViewSize sizing requires a macOS 13 availability boundary",
+        13,
     ),
 )
 
@@ -562,6 +569,12 @@ def run_self_tests() -> None:
             'calendar.timeZone = .gmt\nlet value = text.trimmingPrefix(".")\n'
             'let parts = text.split(separator: "::")',
             3,
+        ),
+        (
+            "ProposedViewSize requires a declaration guard",
+            "func legacy(_ proposal: ProposedViewSize) {}\n"
+            "@available(macOS 13, *)\nfunc modern(_ proposal: ProposedViewSize) {}",
+            1,
         ),
     )
 

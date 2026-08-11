@@ -194,12 +194,17 @@ struct ShareStatsCardView: View {
 
     private var footer: some View {
         HStack(spacing: 12) {
-            Label("LOCAL · AGGREGATE ONLY", systemImage: "lock.shield")
+            Label {
+                Text("LOCAL · AGGREGATE ONLY")
+                    .tracking(0.7)
+            } icon: {
+                Image(systemName: "lock.shield")
+            }
             Spacer()
             Text("DATA THROUGH \(ShareStatsFormatting.dataThrough(self.payload.periodEnd).uppercased())")
+                .tracking(0.7)
         }
         .font(.system(size: 14, weight: .medium, design: .rounded))
-        .tracking(0.7)
         .foregroundStyle(self.secondary)
     }
 }

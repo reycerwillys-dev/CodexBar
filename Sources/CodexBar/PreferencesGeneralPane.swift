@@ -202,6 +202,7 @@ struct GeneralPane: View {
                 Section {
                     CodexBarLabeledContent(L("open_menu_shortcut_title")) {
                         OpenMenuShortcutRecorder()
+                            .frame(width: OpenMenuShortcutRecorder.preferredWidth)
                     }
                 } header: {
                     Text(L("section_keyboard_shortcut"))

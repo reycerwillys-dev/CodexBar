@@ -86,6 +86,7 @@ struct OpenMenuShortcutRecorder: NSViewRepresentable {
         nsView.shortcutName = .openMenu
     }
 
+    @available(macOS 13, *)
     func sizeThatFits(
         _: ProposedViewSize,
         nsView: KeyboardShortcuts.RecorderCocoa,
