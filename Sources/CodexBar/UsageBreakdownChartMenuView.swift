@@ -78,7 +78,7 @@ struct UsageBreakdownChartMenuView: View {
         let presentationState = Self.presentationState(
             hasSummary: !summary.daily.isEmpty,
             hasChartPoints: !model.points.isEmpty)
-        VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: 10) {
             if presentationState != .empty {
                 HStack(alignment: .firstTextBaseline) {
                     self.summaryMetric(title: L("Today"), credits: summary.todayCredits)
@@ -203,7 +203,7 @@ struct UsageBreakdownChartMenuView: View {
             now: self.now,
             calendar: self.calendar)
 
-        VStack(alignment: .leading, spacing: 6) {
+        return VStack(alignment: .leading, spacing: 6) {
             if summary.daily.isEmpty {
                 Text(L("No usage breakdown data."))
                     .font(.footnote)
@@ -417,8 +417,7 @@ struct UsageBreakdownChartMenuView: View {
     @available(macOS 13, *)
     private func selectionBandRect(model: Model, proxy: ChartProxy, geo: GeometryProxy) -> CGRect? {
         guard let key = self.selectedDayKey else { return nil }
-        guard let plotAnchor = proxy.plotFrame else { return nil }
-        let plotFrame = geo[plotAnchor]
+        guard let plotFrame = self.resolvedPlotFrame(proxy: proxy, geo: geo) else { return nil }
         guard let index = model.dayDates.firstIndex(where: { $0.dayKey == key }) else { return nil }
         let date = model.dayDates[index].date
         guard let x = proxy.position(forX: date) else { return nil }
@@ -454,8 +453,7 @@ struct UsageBreakdownChartMenuView: View {
             return
         }
 
-        guard let plotAnchor = proxy.plotFrame else { return }
-        let plotFrame = geo[plotAnchor]
+        guard let plotFrame = self.resolvedPlotFrame(proxy: proxy, geo: geo) else { return }
         guard plotFrame.contains(location) else { return }
 
         let xInPlot = location.x - plotFrame.origin.x
@@ -483,6 +481,16 @@ struct UsageBreakdownChartMenuView: View {
         if self.selectedDayKey != nearest {
             self.selectedDayKey = nearest
         }
+    }
+
+    @available(macOS 13, *)
+    private func resolvedPlotFrame(proxy: ChartProxy, geo: GeometryProxy) -> CGRect? {
+        if #available(macOS 14, *) {
+            guard let plotAnchor = proxy.plotFrame else { return nil }
+            return geo[plotAnchor]
+        }
+
+        return geo[proxy.plotAreaFrame]
     }
     #endif
 
