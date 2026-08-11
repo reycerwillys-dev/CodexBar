@@ -7,11 +7,11 @@
 | ID | 状态 | Owner | 依赖 | 文件 |
 |---|---|---|---|---|
 | MAC12-00 | COMPLETE | coordinator | - | [TASK-00](TASK-00-baseline.md) |
-| MAC12-01 | READY | unassigned | MAC12-00 | [TASK-01](TASK-01-package-perception.md) |
-| MAC12-02 | READY | unassigned | MAC12-00 | [TASK-02](TASK-02-swiftui-compat.md) |
-| MAC12-03 | READY | unassigned | MAC12-00 | [TASK-03](TASK-03-settings-lifecycle.md) |
-| MAC12-04 | READY | unassigned | MAC12-00 | [TASK-04](TASK-04-charts-widgets.md) |
-| MAC12-05 | READY | unassigned | MAC12-00 | [TASK-05](TASK-05-build-test-matrix.md) |
+| MAC12-01 | IN_PROGRESS | Pasteur | MAC12-00 | [TASK-01](TASK-01-package-perception.md) |
+| MAC12-02 | IN_PROGRESS | Raman | MAC12-00 | [TASK-02](TASK-02-swiftui-compat.md) |
+| MAC12-03 | IN_PROGRESS | Meitner | MAC12-00 | [TASK-03](TASK-03-settings-lifecycle.md) |
+| MAC12-04 | IN_PROGRESS | Hubble | MAC12-00 | [TASK-04](TASK-04-charts-widgets.md) |
+| MAC12-05 | IN_PROGRESS | Avicenna | MAC12-00 | [TASK-05](TASK-05-build-test-matrix.md) |
 | MAC12-06 | BLOCKED | coordinator | MAC12-01..05 | [TASK-06](TASK-06-integration-release.md) |
 
 ## 协调约定
