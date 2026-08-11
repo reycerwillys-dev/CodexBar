@@ -42,6 +42,72 @@ jobs:
       - name: Scan macOS 12 compatibility boundaries
         run: ./Scripts/check_macos12_compat.py
 
+  swift-tests:
+    needs: static-compatibility
+    runs-on: macos-26
+    timeout-minutes: 70
+    strategy:
+      fail-fast: false
+      matrix:
+        shard-index: [0, 1]
+        shard-count: [2]
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "12.0"
+      CODEXBAR_ALLOW_TEST_KEYCHAIN_ACCESS: "0"
+      CODEXBAR_ALLOW_TEST_BROWSER_COOKIE_ACCESS: "0"
+      CODEXBAR_SUPPRESS_TEST_KEYCHAIN_ACCESS: "1"
+      LIVE_TEST: "0"
+      QWEN_CLOUD_LIVE_TEST: "0"
+      LIVE_CLAUDE_KEYCHAIN_PROOF: "0"
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Select Xcode 26.3 or 26.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          selected=""
+          for candidate in /Applications/Xcode_26.3.app /Applications/Xcode_26.2.app; do
+            if [[ -d "$candidate" ]]; then
+              selected="${candidate}/Contents/Developer"
+              break
+            fi
+          done
+          [[ -n "$selected" ]]
+          echo "DEVELOPER_DIR=$selected" >> "$GITHUB_ENV"
+          DEVELOPER_DIR="$selected" xcodebuild -version
+          DEVELOPER_DIR="$selected" xcrun swift --version
+
+      - name: Restore SwiftPM and lint caches
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .build
+            ~/Library/Caches/org.swift.swiftpm
+          key: macos12-tests-macos26-${{ matrix.shard-index }}-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            macos12-tests-macos26-${{ matrix.shard-index }}-
+
+      - name: Run repository checks
+        if: ${{ matrix.shard-index == 0 }}
+        run: make check
+
+      - name: Run Swift test shard
+        timeout-minutes: 50
+        shell: bash
+        run: |
+          set -euo pipefail
+          CODEXBAR_TEST_GROUP_SIZE=4 \
+            CODEXBAR_TEST_SUITE_TIMEOUT=120 \
+            CODEXBAR_TEST_RETRY_NON_TIMEOUT_FAILURES=0 \
+            CODEXBAR_TEST_SHARD_INDEX=${{ matrix.shard-index }} \
+            CODEXBAR_TEST_SHARD_COUNT=${{ matrix.shard-count }} \
+            ./Scripts/test.sh
+
+      - name: Run provider plugin engine goldens
+        if: ${{ matrix.shard-index == 0 }}
+        run: ./Scripts/test-plugin-engines.sh
+
   intel-compile-and-package:
     needs: static-compatibility
     # Match the Intel runner already exercised by release-cli.yml.

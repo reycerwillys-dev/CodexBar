@@ -41,6 +41,18 @@ SOURCE_PREFILTER_MARKERS = (
     "openSettings",
     "containerBackground",
     "onKeyPress",
+    "OSAllocatedUnfairLock",
+    "appending(path:",
+    "append(path:",
+    "filePath:",
+    "directoryHint:",
+    "path(percentEncoded:",
+    "host(percentEncoded:",
+    "appending(queryItems:",
+    "append(queryItems:",
+    "matches(of:",
+    "firstMatch(of:",
+    "Regex(",
 )
 
 
@@ -81,6 +93,34 @@ FORBIDDEN_RULES = (
         "swiftui-entry-macro",
         re.compile(r"(?<![\w.])@Entry\b"),
         "declare an explicit EnvironmentKey instead of using the newer @Entry macro",
+    ),
+    Rule(
+        "os-allocated-unfair-lock",
+        re.compile(r"\bOSAllocatedUnfairLock\b|^\s*import\s+os[.]lock\b", re.MULTILINE),
+        "use the Monterey-compatible StateLock instead of the macOS 13 lock API",
+    ),
+    Rule(
+        "modern-url-path-api",
+        re.compile(
+            r"[.]append(?:ing)?\s*\(\s*(?:path|component)\s*:|"
+            r"\bURL\s*\(\s*filePath\s*:|\bdirectoryHint\s*:|"
+            r"[.](?:path|host)\s*\(\s*percentEncoded\s*:|"
+            r"[.]append(?:ing)?\s*\(\s*queryItems\s*:(?!(?s:.{0,256}\bpathComponents\s*:))"
+        ),
+        "use the pre-macOS 13 URL and URLComponents APIs",
+    ),
+    Rule(
+        "modern-url-directory-api",
+        re.compile(
+            r"\bURL[.](?:applicationSupportDirectory|cachesDirectory|desktopDirectory|"
+            r"documentsDirectory|downloadsDirectory|homeDirectory|temporaryDirectory)\b"
+        ),
+        "resolve directories through FileManager for macOS 12",
+    ),
+    Rule(
+        "swift-regex-runtime",
+        re.compile(r"[.](?:matches|firstMatch)\s*\(\s*of\s*:|(?<![A-Za-z0-9_])Regex\s*\("),
+        "use NSRegularExpression/TextParsing to avoid the macOS 13 Swift Regex runtime",
     ),
 )
 
@@ -457,6 +497,23 @@ def run_self_tests() -> None:
             0,
         ),
         ("native Observation is forbidden", "import Observation\n@Observable final class Store {}", 2),
+        (
+            "modern URL APIs are forbidden",
+            "let root = URL(filePath: path, directoryHint: .isDirectory)\n"
+            "let child = root.appending(path: \"child\")\n"
+            "let decoded = child.path(percentEncoded: false)",
+            4,
+        ),
+        (
+            "Swift Regex runtime is forbidden",
+            "let regex = try Regex(pattern)\nlet match = text.firstMatch(of: regex)",
+            2,
+        ),
+        (
+            "Monterey lock is required",
+            "import os.lock\nlet lock = OSAllocatedUnfairLock(initialState: 0)",
+            2,
+        ),
     )
 
     for name, source, expected_count in fixtures:
