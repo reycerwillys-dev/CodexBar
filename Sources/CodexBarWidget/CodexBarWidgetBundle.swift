@@ -5,11 +5,13 @@ import WidgetKit
 struct CodexBarWidgetBundle: WidgetBundle {
     var body: some Widget {
         CodexBarSwitcherWidget()
-        CodexBarUsageWidget()
-        CodexBarHistoryWidget()
-        CodexBarCompactWidget()
-        CodexBarBurnDownWidget()
-        CodexBarCombinedBurnDownWidget()
+        if #available(macOS 14, *) {
+            CodexBarUsageWidget()
+            CodexBarHistoryWidget()
+            CodexBarCompactWidget()
+            CodexBarBurnDownWidget()
+            CodexBarCombinedBurnDownWidget()
+        }
     }
 }
 
@@ -29,13 +31,14 @@ struct CodexBarSwitcherWidget: Widget {
     }
 }
 
+@available(macOS 14, *)
 struct CodexBarUsageWidget: Widget {
     private let kind = "CodexBarUsageWidget"
 
     var body: some WidgetConfiguration {
         AppIntentConfiguration(
             kind: self.kind,
-            intent: ProviderSelectionIntent.self,
+            intent: ProviderSelectionAppIntent.self,
             provider: CodexBarTimelineProvider())
         { entry in
             CodexBarUsageWidgetView(entry: entry)
@@ -46,13 +49,14 @@ struct CodexBarUsageWidget: Widget {
     }
 }
 
+@available(macOS 14, *)
 struct CodexBarHistoryWidget: Widget {
     private let kind = "CodexBarHistoryWidget"
 
     var body: some WidgetConfiguration {
         AppIntentConfiguration(
             kind: self.kind,
-            intent: ProviderSelectionIntent.self,
+            intent: ProviderSelectionAppIntent.self,
             provider: CodexBarTimelineProvider())
         { entry in
             CodexBarHistoryWidgetView(entry: entry)
@@ -63,13 +67,14 @@ struct CodexBarHistoryWidget: Widget {
     }
 }
 
+@available(macOS 14, *)
 struct CodexBarCompactWidget: Widget {
     private let kind = "CodexBarCompactWidget"
 
     var body: some WidgetConfiguration {
         AppIntentConfiguration(
             kind: self.kind,
-            intent: CompactMetricSelectionIntent.self,
+            intent: CompactMetricSelectionAppIntent.self,
             provider: CodexBarCompactTimelineProvider())
         { entry in
             CodexBarCompactWidgetView(entry: entry)
@@ -80,13 +85,14 @@ struct CodexBarCompactWidget: Widget {
     }
 }
 
+@available(macOS 14, *)
 struct CodexBarBurnDownWidget: Widget {
     private let kind = "CodexBarBurnDownWidget"
 
     var body: some WidgetConfiguration {
         AppIntentConfiguration(
             kind: self.kind,
-            intent: BurnDownSelectionIntent.self,
+            intent: BurnDownSelectionAppIntent.self,
             provider: BurnDownTimelineProvider())
         { entry in
             BurnDownWidgetView(entry: entry)
@@ -97,13 +103,14 @@ struct CodexBarBurnDownWidget: Widget {
     }
 }
 
+@available(macOS 14, *)
 struct CodexBarCombinedBurnDownWidget: Widget {
     private let kind = "CodexBarCombinedBurnDownWidget"
 
     var body: some WidgetConfiguration {
         AppIntentConfiguration(
             kind: self.kind,
-            intent: BurnProviderSelectionIntent.self,
+            intent: BurnProviderSelectionAppIntent.self,
             provider: CombinedBurnDownTimelineProvider())
         { entry in
             CombinedBurnDownWidgetView(entry: entry)

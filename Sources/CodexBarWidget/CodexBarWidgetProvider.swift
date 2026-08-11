@@ -3,7 +3,37 @@ import CodexBarCore
 import SwiftUI
 import WidgetKit
 
-enum ProviderChoice: String, AppEnum {
+enum ProviderChoice: String, CaseIterable {
+    case codex
+    case claude
+    case gemini
+    case alibaba
+    case alibabatokenplan
+    case qwencloud
+    case antigravity
+    case cursor
+    case zai
+    case copilot
+    case devin
+    case minimax
+    case kilo
+    case opencode
+    case opencodego
+    case mistral
+    case kimi
+
+    var provider: UsageProvider {
+        UsageProvider(rawValue: self.rawValue)!
+    }
+
+    init?(provider: UsageProvider) {
+        guard ProviderDescriptorRegistry.descriptor(for: provider).metadata.widgetSelectable else { return nil }
+        self.init(rawValue: provider.rawValue)
+    }
+}
+
+@available(macOS 14, *)
+enum ProviderAppIntentChoice: String, AppEnum {
     case codex
     case claude
     case gemini
@@ -27,7 +57,7 @@ enum ProviderChoice: String, AppEnum {
     /// AppIntents extracts this metadata statically; it must stay a literal, exhaustive
     /// dictionary. WidgetProviderChoiceTests pins these titles to the descriptor registry.
     /// Provider-specific by design: AppIntents requires a compile-time provider display inventory.
-    static let caseDisplayRepresentations: [ProviderChoice: DisplayRepresentation] = [
+    static let caseDisplayRepresentations: [ProviderAppIntentChoice: DisplayRepresentation] = [
         .codex: DisplayRepresentation(title: "Codex"),
         .claude: DisplayRepresentation(title: "Claude"),
         .gemini: DisplayRepresentation(title: "Gemini"),
@@ -50,32 +80,35 @@ enum ProviderChoice: String, AppEnum {
     var provider: UsageProvider {
         UsageProvider(rawValue: self.rawValue)!
     }
-
-    init?(provider: UsageProvider) {
-        guard ProviderDescriptorRegistry.descriptor(for: provider).metadata.widgetSelectable else { return nil }
-        self.init(rawValue: provider.rawValue)
-    }
 }
 
-enum CompactMetric: String, AppEnum {
+enum CompactMetric: String, CaseIterable {
+    case credits
+    case todayCost
+    case last30DaysCost
+}
+
+@available(macOS 14, *)
+enum CompactMetricAppIntentChoice: String, AppEnum {
     case credits
     case todayCost
     case last30DaysCost
 
     static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Metric")
 
-    static let caseDisplayRepresentations: [CompactMetric: DisplayRepresentation] = [
+    static let caseDisplayRepresentations: [CompactMetricAppIntentChoice: DisplayRepresentation] = [
         .credits: DisplayRepresentation(title: "Credits left"),
         .todayCost: DisplayRepresentation(title: "Today cost"),
         .last30DaysCost: DisplayRepresentation(title: "30d cost"),
     ]
+
+    var metric: CompactMetric {
+        CompactMetric(rawValue: self.rawValue)!
+    }
 }
 
-struct ProviderSelectionIntent: AppIntent, WidgetConfigurationIntent {
-    static let title: LocalizedStringResource = "Provider"
-    static let description = IntentDescription("Select the provider to display in the widget.")
-
-    @Parameter(title: "Provider", default: .codex)
+/// Availability-neutral selection value used by model tests and Monterey static widgets.
+struct ProviderSelectionIntent {
     var provider: ProviderChoice
 
     init() {
@@ -83,17 +116,31 @@ struct ProviderSelectionIntent: AppIntent, WidgetConfigurationIntent {
     }
 }
 
+@available(macOS 14, *)
+struct ProviderSelectionAppIntent: AppIntent, WidgetConfigurationIntent {
+    static let title: LocalizedStringResource = "Provider"
+    static let description = IntentDescription("Select the provider to display in the widget.")
+
+    @Parameter(title: "Provider", default: .codex)
+    var provider: ProviderAppIntentChoice
+
+    init() {
+        self.provider = .codex
+    }
+}
+
+@available(macOS 14, *)
 struct SwitchWidgetProviderIntent: AppIntent {
     static let title: LocalizedStringResource = "Switch Provider"
     static let description = IntentDescription("Switch the provider shown in the widget.")
 
     @Parameter(title: "Provider")
-    var provider: ProviderChoice
+    var provider: ProviderAppIntentChoice
 
     init() {}
 
     init(provider: ProviderChoice) {
-        self.provider = provider
+        self.provider = ProviderAppIntentChoice(rawValue: provider.rawValue)!
     }
 
     func perform() async throws -> some IntentResult {
@@ -103,15 +150,27 @@ struct SwitchWidgetProviderIntent: AppIntent {
     }
 }
 
-struct CompactMetricSelectionIntent: AppIntent, WidgetConfigurationIntent {
+/// Availability-neutral selection value used by model tests and Monterey static widgets.
+struct CompactMetricSelectionIntent {
+    var provider: ProviderChoice
+    var metric: CompactMetric
+
+    init() {
+        self.provider = .codex
+        self.metric = .credits
+    }
+}
+
+@available(macOS 14, *)
+struct CompactMetricSelectionAppIntent: AppIntent, WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Provider + Metric"
     static let description = IntentDescription("Select the provider and metric to display.")
 
     @Parameter(title: "Provider", default: .codex)
-    var provider: ProviderChoice
+    var provider: ProviderAppIntentChoice
 
     @Parameter(title: "Metric", default: .credits)
-    var metric: CompactMetric
+    var metric: CompactMetricAppIntentChoice
 
     init() {
         self.provider = .codex
@@ -139,6 +198,7 @@ struct CodexBarSwitcherEntry: TimelineEntry {
     let snapshot: WidgetSnapshot
 }
 
+@available(macOS 14, *)
 struct CodexBarTimelineProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> CodexBarWidgetEntry {
         CodexBarWidgetEntry(
@@ -147,7 +207,7 @@ struct CodexBarTimelineProvider: AppIntentTimelineProvider {
             snapshot: WidgetPreviewData.snapshot())
     }
 
-    func snapshot(for configuration: ProviderSelectionIntent, in context: Context) async -> CodexBarWidgetEntry {
+    func snapshot(for configuration: ProviderSelectionAppIntent, in context: Context) async -> CodexBarWidgetEntry {
         let provider = configuration.provider.provider
         return CodexBarWidgetEntry(
             date: Date(),
@@ -156,7 +216,7 @@ struct CodexBarTimelineProvider: AppIntentTimelineProvider {
     }
 
     func timeline(
-        for configuration: ProviderSelectionIntent,
+        for configuration: ProviderSelectionAppIntent,
         in context: Context) async -> Timeline<CodexBarWidgetEntry>
     {
         let provider = configuration.provider.provider
@@ -224,6 +284,7 @@ struct CodexBarSwitcherTimelineProvider: TimelineProvider {
     }
 }
 
+@available(macOS 14, *)
 struct CodexBarCompactTimelineProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> CodexBarCompactEntry {
         CodexBarCompactEntry(
@@ -233,9 +294,12 @@ struct CodexBarCompactTimelineProvider: AppIntentTimelineProvider {
             snapshot: WidgetPreviewData.snapshot())
     }
 
-    func snapshot(for configuration: CompactMetricSelectionIntent, in context: Context) async -> CodexBarCompactEntry {
+    func snapshot(
+        for configuration: CompactMetricSelectionAppIntent,
+        in context: Context) async -> CodexBarCompactEntry
+    {
         let provider = configuration.provider.provider
-        let metric = configuration.metric
+        let metric = configuration.metric.metric
         return CodexBarCompactEntry(
             date: Date(),
             provider: provider,
@@ -244,11 +308,11 @@ struct CodexBarCompactTimelineProvider: AppIntentTimelineProvider {
     }
 
     func timeline(
-        for configuration: CompactMetricSelectionIntent,
+        for configuration: CompactMetricSelectionAppIntent,
         in context: Context) async -> Timeline<CodexBarCompactEntry>
     {
         let provider = configuration.provider.provider
-        let metric = configuration.metric
+        let metric = configuration.metric.metric
         let snapshot = WidgetSnapshotStore.load() ?? WidgetPreviewData.emptySnapshot()
         let entry = CodexBarCompactEntry(
             date: Date(),

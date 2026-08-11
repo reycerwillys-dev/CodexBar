@@ -1,9 +1,22 @@
+#if canImport(Charts)
 import Charts
+#endif
 import CodexBarCore
 import SwiftUI
 
 @MainActor
 struct CostHistoryChartMenuView: View {
+    #if canImport(Charts)
+    @available(macOS 13, *)
+    private struct ChartAvailableContent: View {
+        let parent: CostHistoryChartMenuView
+
+        var body: some View {
+            self.parent.chartBody
+        }
+    }
+    #endif
+
     typealias DailyEntry = CostUsageDailyReport.Entry
 
     enum AxisLabelPlacement: Equatable {
@@ -75,13 +88,18 @@ struct CostHistoryChartMenuView: View {
     }
 
     var body: some View {
+        #if canImport(Charts)
         if #available(macOS 13, *) {
-            self.chartBody
+            ChartAvailableContent(parent: self)
         } else {
             self.macOS12Fallback
         }
+        #else
+        self.macOS12Fallback
+        #endif
     }
 
+    #if canImport(Charts)
     @available(macOS 13, *)
     private var chartBody: some View {
         let model = Self.makeModel(provider: self.provider, daily: self.daily)
@@ -307,16 +325,42 @@ struct CostHistoryChartMenuView: View {
         .padding(.vertical, Self.verticalPadding)
         .frame(minWidth: self.width, maxWidth: .infinity, alignment: .top)
     }
+    #endif
 
     private var macOS12Fallback: some View {
+        let model = Self.makeModel(provider: self.provider, daily: self.daily)
+        let summarizedTotal = self.totalCostUSD ?? (model.points.isEmpty
+            ? nil
+            : model.points.reduce(0) { $0 + $1.costUSD })
+
         VStack(alignment: .leading, spacing: 6) {
-            Text(L("Spend unavailable"))
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            if let total = self.totalCostUSD {
-                Text(self.costString(total))
+            if model.points.isEmpty, summarizedTotal == nil {
+                Text(L("No cost history data."))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(L("No cost history data."))
+            } else {
+                Label(L("Chart unavailable on macOS 12."), systemImage: "chart.bar.xaxis")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                if let total = summarizedTotal {
+                    Text(String(
+                        format: L("Est. total (%@): %@"),
+                        self.windowLabel ?? Self.windowLabel(days: self.historyDays),
+                        self.costString(total)))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.head)
+                }
+
+                if let disclaimer = Self.estimateDisclaimer(provider: self.provider) {
+                    Text(disclaimer)
+                        .font(.caption2)
+                        .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
+                        .lineLimit(2)
+                }
             }
         }
         .padding(.horizontal, 16)
@@ -658,6 +702,7 @@ struct CostHistoryChartMenuView: View {
         model.dateKeys.last?.key
     }
 
+    #if canImport(Charts)
     @available(macOS 13, *)
     private func selectionBandRect(model: Model, proxy: ChartProxy, geo: GeometryProxy) -> CGRect? {
         guard let key = self.selectedDateKey else { return nil }
@@ -714,6 +759,7 @@ struct CostHistoryChartMenuView: View {
             self.selectedDateKey = nearest
         }
     }
+    #endif
 
     private func projectSummary(_ project: CostUsageProjectBreakdown) -> String {
         let cost = project.totalCostUSD

@@ -1,9 +1,22 @@
+#if canImport(Charts)
 import Charts
+#endif
 import CodexBarCore
 import SwiftUI
 
 @MainActor
 struct PlanUtilizationHistoryChartMenuView: View {
+    #if canImport(Charts)
+    @available(macOS 13, *)
+    private struct ChartAvailableContent: View {
+        let parent: PlanUtilizationHistoryChartMenuView
+
+        var body: some View {
+            self.parent.chartBody
+        }
+    }
+    #endif
+
     private enum Layout {
         static let chartHeight: CGFloat = 130
         static let detailHeight: CGFloat = 16
@@ -93,13 +106,18 @@ struct PlanUtilizationHistoryChartMenuView: View {
     }
 
     var body: some View {
+        #if canImport(Charts)
         if #available(macOS 13, *) {
-            self.chartBody
+            ChartAvailableContent(parent: self)
         } else {
             self.macOS12Fallback
         }
+        #else
+        self.macOS12Fallback
+        #endif
     }
 
+    #if canImport(Charts)
     @available(macOS 13, *)
     private var chartBody: some View {
         let effectiveSelectedSeries = self.visibleSeries.first(where: { $0.id == self.selectedSeriesID })
@@ -190,12 +208,35 @@ struct PlanUtilizationHistoryChartMenuView: View {
             self.selectedPointID = nil
         }
     }
+    #endif
 
     private var macOS12Fallback: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(L("Spend unavailable"))
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+            if self.visibleSeries.isEmpty {
+                Text(Self.emptyStateText(title: nil))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } else {
+                Label(L("Chart unavailable on macOS 12."), systemImage: "chart.bar.xaxis")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                ForEach(self.visibleSeries) { series in
+                    let model = self.modelsBySeriesID[series.id] ?? self.emptyModel
+                    let latestObservedPoint = model.points.last { $0.isObserved }
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(series.title)
+                            .font(.caption2)
+                            .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
+                        Text(Self.detailLine(
+                            point: latestObservedPoint,
+                            windowMinutes: series.history.windowMinutes))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -760,6 +801,7 @@ struct PlanUtilizationHistoryChartMenuView: View {
     }
     #endif
 
+    #if canImport(Charts)
     @available(macOS 13, *)
     private func xValue(for index: Int) -> PlottableValue<Double> {
         .value(L("Series"), Double(index))
@@ -803,6 +845,7 @@ struct PlanUtilizationHistoryChartMenuView: View {
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
         }
     }
+    #endif
 
     private func selectedPoint(model: Model) -> Point? {
         guard let selectedPointID else { return nil }
@@ -814,6 +857,7 @@ struct PlanUtilizationHistoryChartMenuView: View {
         return Self.detailLine(point: activePoint, windowMinutes: windowMinutes)
     }
 
+    #if canImport(Charts)
     @available(macOS 13, *)
     private func updateSelection(
         location: CGPoint?,
@@ -868,6 +912,7 @@ struct PlanUtilizationHistoryChartMenuView: View {
             self.selectedPointID = best?.id
         }
     }
+    #endif
 }
 
 extension PlanUtilizationHistoryChartMenuView {

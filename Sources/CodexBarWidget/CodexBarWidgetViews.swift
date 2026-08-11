@@ -1,3 +1,4 @@
+import AppKit
 import CodexBarCore
 import SwiftUI
 import WidgetKit
@@ -10,6 +11,63 @@ extension EnvironmentValues {
     fileprivate var widgetUsageShowsUsed: Bool {
         get { self[WidgetUsageShowsUsedKey.self] }
         set { self[WidgetUsageShowsUsedKey.self] = newValue }
+    }
+}
+
+private struct CodexBarDefaultWidgetBackgroundModifier: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(macOS 14, *) {
+            CodexBarAvailableDefaultWidgetBackground(content: content)
+        } else {
+            content.background(Color(nsColor: .windowBackgroundColor))
+        }
+    }
+}
+
+@available(macOS 14, *)
+private struct CodexBarAvailableDefaultWidgetBackground<Content: View>: View {
+    let content: Content
+
+    var body: some View {
+        self.content.containerBackground(.fill.tertiary, for: .widget)
+    }
+}
+
+private struct CodexBarWidgetBackgroundModifier<Background: View>: ViewModifier {
+    let background: Background
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(macOS 14, *) {
+            CodexBarAvailableWidgetBackground(content: content, background: self.background)
+        } else {
+            content.background(self.background)
+        }
+    }
+}
+
+@available(macOS 14, *)
+private struct CodexBarAvailableWidgetBackground<Content: View, Background: View>: View {
+    let content: Content
+    let background: Background
+
+    var body: some View {
+        self.content.containerBackground(for: .widget) {
+            self.background
+        }
+    }
+}
+
+extension View {
+    func codexbarDefaultWidgetBackground() -> some View {
+        self.modifier(CodexBarDefaultWidgetBackgroundModifier())
+    }
+
+    func codexbarWidgetBackground<Background: View>(
+        @ViewBuilder background: () -> Background) -> some View
+    {
+        self.modifier(CodexBarWidgetBackgroundModifier(background: background()))
     }
 }
 
@@ -27,6 +85,7 @@ struct CodexBarUsageWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .codexbarDefaultWidgetBackground()
         .environment(\.widgetUsageShowsUsed, self.entry.snapshot.usageBarsShowUsed)
     }
 
@@ -69,6 +128,7 @@ struct CodexBarHistoryWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .codexbarDefaultWidgetBackground()
     }
 
     private var emptyState: some View {
@@ -97,6 +157,7 @@ struct CodexBarCompactWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .codexbarDefaultWidgetBackground()
     }
 
     private var emptyState: some View {
@@ -133,6 +194,7 @@ struct CodexBarSwitcherWidgetView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .codexbarDefaultWidgetBackground()
         .environment(\.widgetUsageShowsUsed, self.entry.snapshot.usageBarsShowUsed)
     }
 
@@ -277,23 +339,19 @@ private struct ProviderSwitchChip: View {
             ? WidgetColors.color(for: self.provider.instanceID).opacity(0.2)
             : Color.primary.opacity(0.08)
 
-        if let choice = ProviderChoice(provider: self.provider) {
-            Button(intent: SwitchWidgetProviderIntent(provider: choice)) {
-                Text(label)
-                    .font(self.compact ? .caption2.weight(.semibold) : .caption.weight(.semibold))
-                    .foregroundStyle(self.selected ? Color.primary : Color.secondary)
-                    .padding(.horizontal, self.compact ? 6 : 8)
-                    .padding(.vertical, self.compact ? 3 : 4)
-                    .background(Capsule().fill(background))
-            }
-            .buttonStyle(.plain)
+        if #available(macOS 14, *), let choice = ProviderChoice(provider: self.provider) {
+            ProviderSwitchIntentButton(
+                choice: choice,
+                label: label,
+                selected: self.selected,
+                compact: self.compact,
+                background: background)
         } else {
-            Text(label)
-                .font(self.compact ? .caption2.weight(.semibold) : .caption.weight(.semibold))
-                .foregroundStyle(self.selected ? Color.primary : Color.secondary)
-                .padding(.horizontal, self.compact ? 6 : 8)
-                .padding(.vertical, self.compact ? 3 : 4)
-                .background(Capsule().fill(background))
+            ProviderSwitchChipLabel(
+                label: label,
+                selected: self.selected,
+                compact: self.compact,
+                background: background)
         }
     }
 
@@ -303,6 +361,42 @@ private struct ProviderSwitchChip: View {
 
     private var shortLabel: String {
         ProviderDefaults.metadata[self.provider]?.shortDisplayName ?? self.provider.rawValue.capitalized
+    }
+}
+
+@available(macOS 14, *)
+private struct ProviderSwitchIntentButton: View {
+    let choice: ProviderChoice
+    let label: String
+    let selected: Bool
+    let compact: Bool
+    let background: Color
+
+    var body: some View {
+        Button(intent: SwitchWidgetProviderIntent(provider: self.choice)) {
+            ProviderSwitchChipLabel(
+                label: self.label,
+                selected: self.selected,
+                compact: self.compact,
+                background: self.background)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct ProviderSwitchChipLabel: View {
+    let label: String
+    let selected: Bool
+    let compact: Bool
+    let background: Color
+
+    var body: some View {
+        Text(self.label)
+            .font(self.compact ? .caption2.weight(.semibold) : .caption.weight(.semibold))
+            .foregroundStyle(self.selected ? Color.primary : Color.secondary)
+            .padding(.horizontal, self.compact ? 6 : 8)
+            .padding(.vertical, self.compact ? 3 : 4)
+            .background(Capsule().fill(self.background))
     }
 }
 

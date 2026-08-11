@@ -475,14 +475,15 @@ private struct SpendActivityDailyGrid: View {
                     }
                     .frame(width: gridFrame.width, height: gridFrame.height)
                     .contentShape(Rectangle())
-                    .onContinuousHover { phase in
-                        switch phase {
-                        case let .active(location):
-                            self.hoveredIndex = self.cellIndex(at: location, pitch: pitch)
-                        case .ended:
-                            self.hoveredIndex = nil
+                    .background(
+                        MouseLocationReader { location in
+                            if let location {
+                                self.hoveredIndex = self.cellIndex(at: location, pitch: pitch)
+                            } else {
+                                self.hoveredIndex = nil
+                            }
                         }
-                    }
+                    )
                     .offset(x: gridFrame.minX)
                 }
             }
@@ -753,14 +754,15 @@ private struct SpendActivityWeekGrid: View {
             }
             .frame(width: gridFrame.width, height: gridFrame.height)
             .contentShape(Rectangle())
-            .onContinuousHover { phase in
-                switch phase {
-                case let .active(location):
-                    self.hoverLocation = self.column(at: location, pitch: pitch) == nil ? nil : location
-                case .ended:
-                    self.hoverLocation = nil
+            .background(
+                MouseLocationReader { location in
+                    if let location, self.column(at: location, pitch: pitch) != nil {
+                        self.hoverLocation = location
+                    } else {
+                        self.hoverLocation = nil
+                    }
                 }
-            }
+            )
             .offset(x: gridFrame.minX)
         }
         .aspectRatio(CGFloat(self.columns + 2) / CGFloat(self.rows), contentMode: .fit)

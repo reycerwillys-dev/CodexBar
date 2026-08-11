@@ -1,5 +1,7 @@
 import AppKit
+#if canImport(Charts)
 import Charts
+#endif
 import CodexBarCore
 import SwiftUI
 import Perception
@@ -638,50 +640,94 @@ private struct SpendDailyChart: View {
                             title: L("Spend unavailable"),
                             systemImage: "chart.bar.xaxis")
                             .frame(maxWidth: .infinity, minHeight: 170)
-                    } else if #available(macOS 13, *) {
-                        Chart(self.group.dailyPoints) { point in
-                            BarMark(
-                                x: .value(L("Day"), point.day, unit: .day),
-                                yStart: .value(L("Estimated spend"), point.stackStart),
-                                yEnd: .value(L("Estimated spend"), point.stackEnd),
-                                width: .ratio(0.72))
-                                .foregroundStyle(by: .value(L("Provider"), point.providerName))
-                                .accessibilityLabel(Text(self.pointAccessibilityLabel(point)))
-                                .accessibilityValue(Text(UsageFormatter.currencyString(
-                                    point.cost,
-                                    currencyCode: self.group.currencyCode)))
-                        }
-                        .chartXScale(domain: self.group.chartDomain)
-                        .chartForegroundStyleScale(
-                            domain: presentation.series.map(\.name),
-                            range: presentation.series.map { self.providerColor($0.provider) })
-                        .chartLegend(position: .bottom, alignment: .leading, spacing: 8)
-                        .chartYAxis {
-                            AxisMarks(position: .leading) { value in
-                                AxisGridLine()
-                                AxisValueLabel {
-                                    if let amount = value.as(Double.self) {
-                                        Text(UsageFormatter.compactCurrencyString(
-                                            amount,
-                                            currencyCode: self.group.currencyCode))
-                                    }
-                                }
-                            }
-                        }
-                        .frame(height: 170)
-                        .accessibilityLabel(L("Daily estimated spend"))
-                        .accessibilityValue(presentation.accessibilityValue)
                     } else {
-                        CodexBarContentUnavailableTitleView(
-                            title: L("Spend unavailable"),
-                            systemImage: "chart.bar.xaxis")
-                            .frame(maxWidth: .infinity, minHeight: 170)
+                        #if canImport(Charts)
+                        if #available(macOS 13, *) {
+                            SpendDailyChartAvailableContent(
+                                group: self.group,
+                                presentation: presentation)
+                        } else {
+                            self.macOS12Fallback(presentation: presentation)
+                        }
+                        #else
+                        self.macOS12Fallback(presentation: presentation)
+                        #endif
                     }
                 }
             }
 
         }
 
+    }
+
+    private func macOS12Fallback(presentation: SpendDailyChartPresentation) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(L("Chart unavailable on macOS 12."), systemImage: "chart.bar.xaxis")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if let total = self.group.totalCost {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(L("Estimated spend"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(UsageFormatter.currencyString(total, currencyCode: self.group.currencyCode))
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                }
+            }
+
+            Text(presentation.dayCount > 0
+                ? presentation.accessibilityValue
+                : L("Daily spend breakdown unavailable."))
+                .font(.caption2)
+                .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
+        }
+        .frame(maxWidth: .infinity, minHeight: 170, alignment: .topLeading)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+#if canImport(Charts)
+@available(macOS 13, *)
+private struct SpendDailyChartAvailableContent: View {
+    let group: SpendDashboardModel.CurrencyGroup
+    let presentation: SpendDailyChartPresentation
+
+    var body: some View {
+        Chart(self.group.dailyPoints) { point in
+            BarMark(
+                x: .value(L("Day"), point.day, unit: .day),
+                yStart: .value(L("Estimated spend"), point.stackStart),
+                yEnd: .value(L("Estimated spend"), point.stackEnd),
+                width: .ratio(0.72))
+                .foregroundStyle(by: .value(L("Provider"), point.providerName))
+                .accessibilityLabel(Text(self.pointAccessibilityLabel(point)))
+                .accessibilityValue(Text(UsageFormatter.currencyString(
+                    point.cost,
+                    currencyCode: self.group.currencyCode)))
+        }
+        .chartXScale(domain: self.group.chartDomain)
+        .chartForegroundStyleScale(
+            domain: self.presentation.series.map(\.name),
+            range: self.presentation.series.map { self.providerColor($0.provider) })
+        .chartLegend(position: .bottom, alignment: .leading, spacing: 8)
+        .chartYAxis {
+            AxisMarks(position: .leading) { value in
+                AxisGridLine()
+                AxisValueLabel {
+                    if let amount = value.as(Double.self) {
+                        Text(UsageFormatter.compactCurrencyString(
+                            amount,
+                            currencyCode: self.group.currencyCode))
+                    }
+                }
+            }
+        }
+        .frame(height: 170)
+        .accessibilityLabel(L("Daily estimated spend"))
+        .accessibilityValue(self.presentation.accessibilityValue)
     }
 
     private func pointAccessibilityLabel(_ point: SpendDashboardModel.DailyPoint) -> String {
@@ -695,6 +741,7 @@ private struct SpendDailyChart: View {
         return Color(red: color.red, green: color.green, blue: color.blue)
     }
 }
+#endif
 
 private struct SpendProviderIcon: View {
     let provider: UsageProvider

@@ -3,29 +3,70 @@ import CodexBarCore
 import SwiftUI
 import WidgetKit
 
+private struct CodexBarWidgetIsMonochromeKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var codexbarWidgetIsMonochrome: Bool {
+        get { self[CodexBarWidgetIsMonochromeKey.self] }
+        set { self[CodexBarWidgetIsMonochromeKey.self] = newValue }
+    }
+}
+
+struct CodexBarWidgetRenderingModeCompatibility<Content: View>: View {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        if #available(macOS 13, *) {
+            CodexBarAvailableWidgetRenderingMode(content: self.content)
+        } else {
+            self.content.environment(\.codexbarWidgetIsMonochrome, false)
+        }
+    }
+}
+
+@available(macOS 13, *)
+private struct CodexBarAvailableWidgetRenderingMode<Content: View>: View {
+    @Environment(\.widgetRenderingMode) private var renderingMode
+    let content: Content
+
+    var body: some View {
+        self.content.environment(\.codexbarWidgetIsMonochrome, self.renderingMode != .fullColor)
+    }
+}
+
 // MARK: - Entry View
 
 struct BurnDownWidgetView: View {
     let entry: BurnDownEntry
 
     var body: some View {
-        let state = BurnDownState(
-            snapshot: self.entry.snapshot,
-            provider: self.entry.provider,
-            selection: self.entry.window)
+        CodexBarWidgetRenderingModeCompatibility {
+            let state = BurnDownState(
+                snapshot: self.entry.snapshot,
+                provider: self.entry.provider,
+                selection: self.entry.window)
 
-        Group {
-            if let state, let window = state.selectedWindow {
-                BurnDownLayout(
-                    window: window,
-                    provider: self.entry.provider,
-                    blankChart: state.blankPrimaryChart,
-                    resetsAtOverride: state.selectedResetOverride)
-            } else {
-                self.emptyState
+            Group {
+                if let state, let window = state.selectedWindow {
+                    BurnDownLayout(
+                        window: window,
+                        provider: self.entry.provider,
+                        blankChart: state.blankPrimaryChart,
+                        resetsAtOverride: state.selectedResetOverride)
+                } else {
+                    self.emptyState
+                }
+            }
+            .codexbarWidgetBackground {
+                BurnWidgetBackground()
             }
         }
-        .background(BurnWidgetBackground())
     }
 
     private var emptyState: some View {
@@ -45,7 +86,7 @@ struct BurnDownWidgetView: View {
 // MARK: - Main Layout
 
 private struct BurnDownLayout: View {
-    @Environment(\.widgetRenderingMode) private var renderingMode
+    @Environment(\.codexbarWidgetIsMonochrome) private var isMonochrome
     @Environment(\.colorScheme) private var colorScheme
 
     let window: RateWindow
@@ -59,9 +100,12 @@ private struct BurnDownLayout: View {
 
     var body: some View {
         let dark = self.colorScheme == .dark
-        let isMonochrome = self.renderingMode != .fullColor
         let geom = BurnGeom(window: self.window)
-        let theme = BurnTheme(provider: self.provider, geom: geom, dark: dark, isMonochrome: isMonochrome)
+        let theme = BurnTheme(
+            provider: self.provider,
+            geom: geom,
+            dark: dark,
+            isMonochrome: self.isMonochrome)
         let windowMins = self.window.windowMinutes ?? 300
         let isDailyWindow = windowMins >= 1440
         let now = Date()
@@ -413,11 +457,11 @@ private struct BurnChartCanvas: View {
 // MARK: - Background
 
 struct BurnWidgetBackground: View {
-    @Environment(\.widgetRenderingMode) private var renderingMode
+    @Environment(\.codexbarWidgetIsMonochrome) private var isMonochrome
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        if self.renderingMode == .fullColor {
+        if !self.isMonochrome {
             let dark = self.colorScheme == .dark
             LinearGradient(
                 colors: dark

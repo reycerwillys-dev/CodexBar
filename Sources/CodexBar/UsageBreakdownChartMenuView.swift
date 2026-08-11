@@ -1,9 +1,22 @@
+#if canImport(Charts)
 import Charts
+#endif
 import CodexBarCore
 import SwiftUI
 
 @MainActor
 struct UsageBreakdownChartMenuView: View {
+    #if canImport(Charts)
+    @available(macOS 13, *)
+    private struct ChartAvailableContent: View {
+        let parent: UsageBreakdownChartMenuView
+
+        var body: some View {
+            self.parent.chartBody
+        }
+    }
+    #endif
+
     enum PresentationState: Equatable {
         case empty
         case totalsOnly
@@ -43,13 +56,18 @@ struct UsageBreakdownChartMenuView: View {
     }
 
     var body: some View {
+        #if canImport(Charts)
         if #available(macOS 13, *) {
-            self.chartBody
+            ChartAvailableContent(parent: self)
         } else {
             self.macOS12Fallback
         }
+        #else
+        self.macOS12Fallback
+        #endif
     }
 
+    #if canImport(Charts)
     @available(macOS 13, *)
     private var chartBody: some View {
         let summary = OpenAIDashboardDailyBreakdown.recentUsageSummary(
@@ -177,12 +195,33 @@ struct UsageBreakdownChartMenuView: View {
         .padding(.vertical, 10)
         .frame(minWidth: self.width, maxWidth: .infinity, alignment: .leading)
     }
+    #endif
 
     private var macOS12Fallback: some View {
+        let summary = OpenAIDashboardDailyBreakdown.recentUsageSummary(
+            from: self.breakdown,
+            now: self.now,
+            calendar: self.calendar)
+
         VStack(alignment: .leading, spacing: 6) {
-            Text(L("Spend unavailable"))
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+            if summary.daily.isEmpty {
+                Text(L("No usage breakdown data."))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(L("No usage breakdown data available."))
+            } else {
+                HStack(alignment: .firstTextBaseline) {
+                    self.summaryMetric(title: L("Today"), credits: summary.todayCredits)
+                    Spacer(minLength: 12)
+                    self.summaryMetric(
+                        title: String(format: L("Last %d days"), summary.historyDays),
+                        credits: summary.totalCredits)
+                }
+
+                Label(L("Chart unavailable on macOS 12."), systemImage: "chart.bar.xaxis")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -374,6 +413,7 @@ struct UsageBreakdownChartMenuView: View {
         return comps.date
     }
 
+    #if canImport(Charts)
     @available(macOS 13, *)
     private func selectionBandRect(model: Model, proxy: ChartProxy, geo: GeometryProxy) -> CGRect? {
         guard let key = self.selectedDayKey else { return nil }
@@ -444,6 +484,7 @@ struct UsageBreakdownChartMenuView: View {
             self.selectedDayKey = nearest
         }
     }
+    #endif
 
     private func nearestDayKey(to date: Date, model: Model) -> String? {
         guard !model.selectableDayDates.isEmpty else { return nil }

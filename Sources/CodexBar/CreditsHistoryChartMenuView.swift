@@ -1,9 +1,22 @@
+#if canImport(Charts)
 import Charts
+#endif
 import CodexBarCore
 import SwiftUI
 
 @MainActor
 struct CreditsHistoryChartMenuView: View {
+    #if canImport(Charts)
+    @available(macOS 13, *)
+    private struct ChartAvailableContent: View {
+        let parent: CreditsHistoryChartMenuView
+
+        var body: some View {
+            self.parent.chartBody
+        }
+    }
+    #endif
+
     private struct Point: Identifiable {
         let id: String
         let date: Date
@@ -26,13 +39,18 @@ struct CreditsHistoryChartMenuView: View {
     }
 
     var body: some View {
+        #if canImport(Charts)
         if #available(macOS 13, *) {
-            self.chartBody
+            ChartAvailableContent(parent: self)
         } else {
             self.macOS12Fallback
         }
+        #else
+        self.macOS12Fallback
+        #endif
     }
 
+    #if canImport(Charts)
     @available(macOS 13, *)
     private var chartBody: some View {
         let model = Self.makeModel(from: self.breakdown)
@@ -125,12 +143,29 @@ struct CreditsHistoryChartMenuView: View {
         .padding(.vertical, 10)
         .frame(minWidth: self.width, maxWidth: .infinity, alignment: .leading)
     }
+    #endif
 
     private var macOS12Fallback: some View {
+        let model = Self.makeModel(from: self.breakdown)
+
         VStack(alignment: .leading, spacing: 6) {
-            Text(L("Spend unavailable"))
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+            if model.dayDates.isEmpty {
+                Text(L("No credits history data."))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(L("No credits history data available."))
+            } else {
+                Label(L("Chart unavailable on macOS 12."), systemImage: "chart.bar.xaxis")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                let total = model.breakdownByDayKey.values.reduce(0) { $0 + $1.totalCreditsUsed }
+                Text(String(
+                    format: L("Total (30d): %@ credits"),
+                    total.formatted(.number.precision(.fractionLength(0...2)))))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -239,6 +274,7 @@ struct CreditsHistoryChartMenuView: View {
         return model.pointsByDayKey[key]
     }
 
+    #if canImport(Charts)
     @available(macOS 13, *)
     private func selectionBandRect(model: Model, proxy: ChartProxy, geo: GeometryProxy) -> CGRect? {
         guard let key = self.selectedDayKey else { return nil }
@@ -309,6 +345,7 @@ struct CreditsHistoryChartMenuView: View {
             self.selectedDayKey = nearest
         }
     }
+    #endif
 
     private func nearestDayKey(to date: Date, model: Model) -> String? {
         guard !model.selectableDayDates.isEmpty else { return nil }

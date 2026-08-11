@@ -4,13 +4,26 @@ import WidgetKit
 
 /// Provider-specific by design: AppIntents requires compile-time enum cases and display representations;
 /// runtime presentation policy still comes from each provider descriptor below this literal WidgetKit surface.
-enum BurnProviderChoice: String, AppEnum {
+enum BurnProviderChoice: String, CaseIterable {
+    case codex
+    case claude
+
+    var provider: UsageProvider {
+        switch self {
+        case .codex: .codex
+        case .claude: .claude
+        }
+    }
+}
+
+@available(macOS 14, *)
+enum BurnProviderAppIntentChoice: String, AppEnum {
     case codex
     case claude
 
     static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Provider")
 
-    static let caseDisplayRepresentations: [BurnProviderChoice: DisplayRepresentation] = [
+    static let caseDisplayRepresentations: [BurnProviderAppIntentChoice: DisplayRepresentation] = [
         .codex: DisplayRepresentation(title: "Codex"),
         .claude: DisplayRepresentation(title: "Claude"),
     ]
@@ -23,27 +36,31 @@ enum BurnProviderChoice: String, AppEnum {
     }
 }
 
-enum BurnWindowChoice: String, AppEnum {
+enum BurnWindowChoice: String, CaseIterable {
+    case session
+    case weekly
+}
+
+@available(macOS 14, *)
+enum BurnWindowAppIntentChoice: String, AppEnum {
     case session
     case weekly
 
     static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Usage window")
 
-    static let caseDisplayRepresentations: [BurnWindowChoice: DisplayRepresentation] = [
+    static let caseDisplayRepresentations: [BurnWindowAppIntentChoice: DisplayRepresentation] = [
         .session: DisplayRepresentation(title: "Session (5-hour)"),
         .weekly: DisplayRepresentation(title: "Weekly (7-day)"),
     ]
+
+    var selection: BurnWindowChoice {
+        BurnWindowChoice(rawValue: self.rawValue)!
+    }
 }
 
-struct BurnDownSelectionIntent: AppIntent, WidgetConfigurationIntent {
-    // Provider-specific by design: the original burn-down widget defaults to Codex session usage.
-    static let title: LocalizedStringResource = "Burn Down"
-    static let description = IntentDescription("Select the provider and usage window to display.")
-
-    @Parameter(title: "Provider", default: .codex)
+/// Availability-neutral selection value used by model tests and Monterey static widgets.
+struct BurnDownSelectionIntent {
     var provider: BurnProviderChoice
-
-    @Parameter(title: "Usage window", default: .session)
     var window: BurnWindowChoice
 
     init() {
@@ -52,13 +69,41 @@ struct BurnDownSelectionIntent: AppIntent, WidgetConfigurationIntent {
     }
 }
 
-struct BurnProviderSelectionIntent: AppIntent, WidgetConfigurationIntent {
+@available(macOS 14, *)
+struct BurnDownSelectionAppIntent: AppIntent, WidgetConfigurationIntent {
+    // Provider-specific by design: the original burn-down widget defaults to Codex session usage.
+    static let title: LocalizedStringResource = "Burn Down"
+    static let description = IntentDescription("Select the provider and usage window to display.")
+
+    @Parameter(title: "Provider", default: .codex)
+    var provider: BurnProviderAppIntentChoice
+
+    @Parameter(title: "Usage window", default: .session)
+    var window: BurnWindowAppIntentChoice
+
+    init() {
+        self.provider = .codex
+        self.window = .session
+    }
+}
+
+/// Availability-neutral selection value used by model tests and Monterey static widgets.
+struct BurnProviderSelectionIntent {
+    var provider: BurnProviderChoice
+
+    init() {
+        self.provider = .codex
+    }
+}
+
+@available(macOS 14, *)
+struct BurnProviderSelectionAppIntent: AppIntent, WidgetConfigurationIntent {
     // Provider-specific by design: the provider-only burn-down widget also defaults to Codex.
     static let title: LocalizedStringResource = "Burn Down Provider"
     static let description = IntentDescription("Select the provider to display.")
 
     @Parameter(title: "Provider", default: .codex)
-    var provider: BurnProviderChoice
+    var provider: BurnProviderAppIntentChoice
 
     init() {
         self.provider = .codex
@@ -173,6 +218,7 @@ enum BurnDownRefreshSchedule {
     }
 }
 
+@available(macOS 14, *)
 struct BurnDownTimelineProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> BurnDownEntry {
         BurnDownEntry(
@@ -182,28 +228,29 @@ struct BurnDownTimelineProvider: AppIntentTimelineProvider {
             snapshot: WidgetPreviewData.snapshot())
     }
 
-    func snapshot(for configuration: BurnDownSelectionIntent, in context: Context) async -> BurnDownEntry {
+    func snapshot(for configuration: BurnDownSelectionAppIntent, in context: Context) async -> BurnDownEntry {
         BurnDownEntry(
             date: Date(),
             provider: configuration.provider.provider,
-            window: configuration.window,
+            window: configuration.window.selection,
             snapshot: WidgetSnapshotStore.load() ?? WidgetPreviewData.snapshot())
     }
 
     func timeline(
-        for configuration: BurnDownSelectionIntent,
+        for configuration: BurnDownSelectionAppIntent,
         in context: Context) async -> Timeline<BurnDownEntry>
     {
         let entry = BurnDownEntry(
             date: Date(),
             provider: configuration.provider.provider,
-            window: configuration.window,
+            window: configuration.window.selection,
             snapshot: WidgetSnapshotStore.load() ?? WidgetPreviewData.emptySnapshot())
         let refresh = BurnDownRefreshSchedule.nextRefresh(snapshot: entry.snapshot, provider: entry.provider)
         return Timeline(entries: [entry], policy: .after(refresh))
     }
 }
 
+@available(macOS 14, *)
 struct CombinedBurnDownTimelineProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> CombinedBurnDownEntry {
         CombinedBurnDownEntry(
@@ -213,7 +260,7 @@ struct CombinedBurnDownTimelineProvider: AppIntentTimelineProvider {
     }
 
     func snapshot(
-        for configuration: BurnProviderSelectionIntent,
+        for configuration: BurnProviderSelectionAppIntent,
         in context: Context) async -> CombinedBurnDownEntry
     {
         CombinedBurnDownEntry(
@@ -223,7 +270,7 @@ struct CombinedBurnDownTimelineProvider: AppIntentTimelineProvider {
     }
 
     func timeline(
-        for configuration: BurnProviderSelectionIntent,
+        for configuration: BurnProviderSelectionAppIntent,
         in context: Context) async -> Timeline<CombinedBurnDownEntry>
     {
         let entry = CombinedBurnDownEntry(

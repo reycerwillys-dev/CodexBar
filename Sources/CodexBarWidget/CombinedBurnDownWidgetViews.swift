@@ -9,19 +9,23 @@ struct CombinedBurnDownWidgetView: View {
     let entry: CombinedBurnDownEntry
 
     var body: some View {
-        let state = BurnDownState(
-            snapshot: self.entry.snapshot,
-            provider: self.entry.provider,
-            selection: .session)
+        CodexBarWidgetRenderingModeCompatibility {
+            let state = BurnDownState(
+                snapshot: self.entry.snapshot,
+                provider: self.entry.provider,
+                selection: .session)
 
-        Group {
-            if let state {
-                CombinedBurnDownLayout(state: state, provider: self.entry.provider)
-            } else {
-                self.emptyState
+            Group {
+                if let state {
+                    CombinedBurnDownLayout(state: state, provider: self.entry.provider)
+                } else {
+                    self.emptyState
+                }
+            }
+            .codexbarWidgetBackground {
+                BurnWidgetBackground()
             }
         }
-        .background(BurnWidgetBackground())
     }
 
     private var emptyState: some View {
@@ -41,7 +45,7 @@ struct CombinedBurnDownWidgetView: View {
 // MARK: - Layout
 
 private struct CombinedBurnDownLayout: View {
-    @Environment(\.widgetRenderingMode) private var renderingMode
+    @Environment(\.codexbarWidgetIsMonochrome) private var isMonochrome
     @Environment(\.colorScheme) private var colorScheme
 
     let state: BurnDownState
@@ -49,7 +53,6 @@ private struct CombinedBurnDownLayout: View {
 
     var body: some View {
         let dark = self.colorScheme == .dark
-        let isMonochrome = self.renderingMode != .fullColor
 
         let sessionWindow = self.state.primaryWindow
         let weeklyWindow = self.state.secondaryWindow
@@ -68,7 +71,7 @@ private struct CombinedBurnDownLayout: View {
             provider: self.provider,
             geom: baseGeom,
             dark: dark,
-            isMonochrome: isMonochrome)
+            isMonochrome: self.isMonochrome)
 
         VStack(spacing: 0) {
             // Header
@@ -101,7 +104,7 @@ private struct CombinedBurnDownLayout: View {
                             provider: self.provider,
                             geom: geom,
                             dark: dark,
-                            isMonochrome: isMonochrome),
+                            isMonochrome: self.isMonochrome),
                         tag: burnCompactWindowLabel(win.windowMinutes, fallback: "S"),
                         periods: 5,
                         metric: .remaining,
@@ -125,7 +128,7 @@ private struct CombinedBurnDownLayout: View {
                             provider: self.provider,
                             geom: geom,
                             dark: dark,
-                            isMonochrome: isMonochrome),
+                            isMonochrome: self.isMonochrome),
                         tag: burnCompactWindowLabel(win.windowMinutes, fallback: "W"),
                         periods: 7,
                         metric: .pace,
