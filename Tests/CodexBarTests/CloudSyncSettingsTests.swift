@@ -126,6 +126,54 @@ struct CloudSyncSettingsTests {
     }
 
     @Test
+    func `opaque sync engine state keeps its JSON representation`() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("CloudSyncPersistenceStateTests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let fileURL = directory.appendingPathComponent("engine-state.json")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try Data("""
+        {
+          "stateSerialization": {
+            "changeToken": "opaque-token",
+            "flags": [1, true, null]
+          },
+          "encodedSystemFields": {},
+          "recordMetadata": {},
+          "suppressedEnableIntents": [],
+          "fleetDevices": {},
+          "fleetSnapshots": {}
+        }
+        """.utf8).write(to: fileURL)
+
+        let persistence = CloudSyncPersistence(fileURL: fileURL)
+        let envelope = persistence.load()
+        let stateData = try #require(envelope.stateSerialization)
+        let state = try #require(JSONSerialization.jsonObject(with: stateData) as? [String: Any])
+        let rewrittenRoot = try #require(
+            JSONSerialization.jsonObject(with: Data(contentsOf: fileURL)) as? [String: Any])
+
+        #expect(state["changeToken"] as? String == "opaque-token")
+        #expect(state["flags"] is [Any])
+        #expect(rewrittenRoot["stateSerialization"] is [String: Any])
+    }
+
+    @Test
+    func `unsupported systems report a safe iCloud sync downgrade`() async throws {
+        if #available(macOS 14, *) { return }
+        let fixture = try self.makeFixture("unsupported-system")
+        let persistence = self.makePersistence("unsupported-system")
+        let state = CloudSyncState()
+        let engine = CloudSyncEngine(settings: fixture.store, state: state, persistence: persistence)
+
+        await engine.start(enabled: true)
+
+        #expect(state.availability == .restricted)
+        #expect(state.status.lastError == CloudSyncEngine.unsupportedSystemMessage)
+        #expect(!FileManager.default.fileExists(atPath: persistence.fileURL.path))
+    }
+
+    @Test
     func `relaunch with cached fleet records and clean dirty set queues no configuration records`() {
         let metadata = CloudSyncPersistence.RecordMetadata(
             recordType: SyncRecordType.providerIntent.rawValue,
@@ -144,6 +192,7 @@ struct CloudSyncSettingsTests {
         #expect(recordNames.isEmpty)
     }
 
+    @available(macOS 14, *)
     @Test
     func `local provider edit queues exactly that provider`() async throws {
         let fixture = try self.makeFixture("dirty-provider")
@@ -170,6 +219,7 @@ struct CloudSyncSettingsTests {
         #expect(recordNames == [ProviderIntentPayload.recordName(for: .claude)])
     }
 
+    @available(macOS 14, *)
     @Test
     func `CLI style file edit queues exactly that provider`() async throws {
         let fixture = try self.makeFixture("dirty-file-provider")
@@ -197,6 +247,7 @@ struct CloudSyncSettingsTests {
         #expect(recordNames == [ProviderIntentPayload.recordName(for: .claude)])
     }
 
+    @available(macOS 14, *)
     @Test
     func `machine local provider edit does not become dirty`() async throws {
         let fixture = try self.makeFixture("machine-local-provider")
@@ -248,6 +299,7 @@ struct CloudSyncSettingsTests {
         #expect(envelope.dirtyProviders.contains(UsageProvider.codex.rawValue))
     }
 
+    @available(macOS 14, *)
     @Test
     func `remote provider apply writes config without becoming dirty`() async throws {
         let fixture = try self.makeFixture("remote-provider")
@@ -281,6 +333,7 @@ struct CloudSyncSettingsTests {
         #expect(persistence.load().dirtyProviders.isEmpty)
     }
 
+    @available(macOS 14, *)
     @Test
     func `missing desired record drains its pending save`() {
         let recordID = CKRecord.ID(recordName: "stale", zoneID: CloudSyncEngine.zoneID)

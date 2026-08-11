@@ -45,6 +45,7 @@ struct CloudSyncQuotaRetryState: Equatable, Sendable {
     }
 }
 
+@available(macOS 14, *)
 enum CloudSyncBatchRecordProvider {
     static func record(
         for recordID: CKRecord.ID,
@@ -138,15 +139,16 @@ enum CloudSyncEntitlementGate {
     }
 }
 
-actor CloudSyncEngine: CKSyncEngineDelegate {
+actor CloudSyncEngine {
     static let containerIdentifier = "iCloud.com.steipete.codexbar"
     static let zoneID = CKRecordZone.ID(zoneName: "CodexBarSync", ownerName: CKCurrentUserDefaultName)
+    static let unsupportedSystemMessage = "iCloud sync requires macOS 14 or newer."
 
     private let settings: SettingsStore
     private let state: CloudSyncState
     private let persistence: CloudSyncPersistence
     private var persistenceEnvelope: CloudSyncPersistence.Envelope
-    private var engine: CKSyncEngine?
+    private var engineStorage: Any?
     private var desiredRecords: [CKRecord.ID: CKRecord] = [:]
     private var enabled = false
     private var configPushTask: Task<Void, Never>?
@@ -161,6 +163,12 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
     private var quotaRetryState = CloudSyncQuotaRetryState()
     private var didRehydrateFleetState = false
     private let logger = CodexBarLog.logger(LogCategories.settings)
+
+    @available(macOS 14, *)
+    private var engine: CKSyncEngine? {
+        get { self.engineStorage as? CKSyncEngine }
+        set { self.engineStorage = newValue }
+    }
 
     init(
         settings: SettingsStore,
@@ -183,6 +191,10 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
     }
 
     func start(enabled: Bool) async {
+        guard #available(macOS 14, *) else {
+            await self.markUnsupportedSystem()
+            return
+        }
         guard CloudSyncEntitlementGate.hasICloudServicesEntitlement() else {
             await self.updateAvailability(.missingEntitlement)
             return
@@ -193,6 +205,10 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
     }
 
     func setEnabled(_ enabled: Bool) async {
+        guard #available(macOS 14, *) else {
+            await self.markUnsupportedSystem()
+            return
+        }
         self.enabled = enabled
         guard enabled else {
             await self.stopEngine(clearPersistence: false)
@@ -228,6 +244,10 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
 
     func resumeOrFetch(enabled: Bool) async {
         guard enabled else { return }
+        guard #available(macOS 14, *) else {
+            await self.markUnsupportedSystem()
+            return
+        }
         if self.engine == nil {
             await self.start(enabled: true)
         } else {
@@ -236,6 +256,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
     }
 
     func localUserConfigurationDidChange(_ config: CodexBarConfig) {
+        guard #available(macOS 14, *) else { return }
         let previousSuppressedEnableIntents = self.persistenceEnvelope.suppressedEnableIntents
         for providerConfig in config.providers {
             if let previous = self.lastKnownProviderConfigs[providerConfig.id],
@@ -266,6 +287,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
     }
 
     func localUserPreferencesDidChange(_ preferences: SyncedPreferences) {
+        guard #available(macOS 14, *) else { return }
         defer { self.lastKnownPreferences = preferences }
         guard let previous = self.lastKnownPreferences else { return }
         do {
@@ -280,6 +302,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
     }
 
     func localIncludeSecretsDidChange(_ includeSecrets: Bool, config: CodexBarConfig) {
+        guard #available(macOS 14, *) else { return }
         defer { self.lastKnownIncludeSecrets = includeSecrets }
         guard let previous = self.lastKnownIncludeSecrets, previous != includeSecrets else { return }
         self.persistenceEnvelope.dirtyProviders.formUnion(config.providers.map(\.id.rawValue))
@@ -287,6 +310,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
     }
 
     func scheduleConfigurationPush() {
+        guard #available(macOS 14, *) else { return }
         guard self.enabled, self.engine != nil else { return }
         self.configPushTask?.cancel()
         self.configPushTask = Task { [weak self] in
@@ -303,6 +327,10 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
     }
 
     func queueSnapshots(_ snapshots: [AccountSnapshotSyncPayload]) async {
+        guard #available(macOS 14, *) else {
+            await self.markUnsupportedSystem()
+            return
+        }
         guard self.enabled, self.engine != nil else { return }
         let options = await MainActor.run {
             (
@@ -331,6 +359,10 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
     }
 
     func fetchChanges() async {
+        guard #available(macOS 14, *) else {
+            await self.markUnsupportedSystem()
+            return
+        }
         guard self.enabled, let engine = self.engine else { return }
         do {
             try await engine.fetchChanges(.init(scope: .zoneIDs([Self.zoneID])))
@@ -342,9 +374,12 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
 
     func stop() async {
         self.enabled = false
-        await self.stopEngine(clearPersistence: false)
+        if #available(macOS 14, *) {
+            await self.stopEngine(clearPersistence: false)
+        }
     }
 
+    @available(macOS 14, *)
     private func initializeEngineIfNeeded() async throws -> Bool {
         guard self.engine == nil else { return false }
         // This is the first CKContainer access, and every path here has already passed the entitlement gate.
@@ -366,7 +401,8 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
 
         var configuration = CKSyncEngine.Configuration(
             database: container.privateCloudDatabase,
-            stateSerialization: self.persistenceEnvelope.stateSerialization,
+            stateSerialization: CloudSyncPersistence.decodeStateSerialization(
+                self.persistenceEnvelope.stateSerialization),
             delegate: self)
         configuration.automaticallySync = true
         let engine = CKSyncEngine(configuration)
@@ -376,6 +412,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         return true
     }
 
+    @available(macOS 14, *)
     private func queueCurrentConfigurationAndPreferences() async throws {
         guard let engine = self.engine else { return }
         if self.persistenceEnvelope.recordMetadata.values.contains(where: {
@@ -412,6 +449,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         }
     }
 
+    @available(macOS 14, *)
     private func queueProviderIntent(
         _ config: ProviderConfig,
         includeSecrets: Bool,
@@ -458,6 +496,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         return payload
     }
 
+    @available(macOS 14, *)
     private func queuePreferences(_ preferences: SyncedPreferences, engine: CKSyncEngine) throws {
         let payload = try CanonicalSyncJSON.string(PreferencesSyncPayload(preferences: preferences))
         let recordID = self.recordID(named: PreferencesSyncPayload.recordName)
@@ -471,6 +510,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
     }
 
+    @available(macOS 14, *)
     private func queueDeviceRecord() async throws {
         guard let engine = self.engine else { return }
         let deviceID = await MainActor.run { self.settings.iCloudSyncDeviceID }
@@ -495,6 +535,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         self.persistEnvelope()
     }
 
+    @available(macOS 14, *)
     private func pushPendingSnapshots() async {
         guard let engine = self.engine, !self.pendingSnapshots.isEmpty else { return }
         guard await MainActor.run(body: { !self.state.status.needsAppUpdate }) else { return }
@@ -526,14 +567,17 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
 
     // MARK: CKSyncEngineDelegate
 
+    @available(macOS 14, *)
     nonisolated func handleEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) async {
         await self.processEvent(event, syncEngine: syncEngine)
     }
 
+    @available(macOS 14, *)
     private func processEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) async {
         switch event {
         case let .stateUpdate(update):
-            self.persistenceEnvelope.stateSerialization = update.stateSerialization
+            self.persistenceEnvelope.stateSerialization = try? CloudSyncPersistence.encodeStateSerialization(
+                update.stateSerialization)
             self.persistEnvelope()
         case let .accountChange(change):
             switch change.changeType {
@@ -588,6 +632,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         }
     }
 
+    @available(macOS 14, *)
     nonisolated func nextRecordZoneChangeBatch(
         _ context: CKSyncEngine.SendChangesContext,
         syncEngine: CKSyncEngine) async -> CKSyncEngine.RecordZoneChangeBatch?
@@ -595,6 +640,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         await self.makeChangeBatch(context, syncEngine: syncEngine)
     }
 
+    @available(macOS 14, *)
     private func makeChangeBatch(
         _ context: CKSyncEngine.SendChangesContext,
         syncEngine: CKSyncEngine) async -> CKSyncEngine.RecordZoneChangeBatch?
@@ -606,12 +652,14 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         }
     }
 
+    @available(macOS 14, *)
     private func recordForPendingSave(_ recordID: CKRecord.ID, syncEngine: CKSyncEngine) -> CKRecord? {
         CloudSyncBatchRecordProvider.record(for: recordID, desiredRecords: self.desiredRecords) { change in
             syncEngine.state.remove(pendingRecordZoneChanges: [change])
         }
     }
 
+    @available(macOS 14, *)
     func applyFetchedRecords(_ records: [CKRecord]) async {
         if records.contains(where: { self.schemaVersion($0) > CodexBarSyncSchema.currentVersion }) {
             await MainActor.run { self.state.status.needsAppUpdate = true }
@@ -644,6 +692,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         }
     }
 
+    @available(macOS 14, *)
     private func shouldApplyServerRecord(_ server: CKRecord) -> Bool {
         guard let engine = self.engine,
               engine.state.pendingRecordZoneChanges.contains(.saveRecord(server.recordID)),
@@ -673,6 +722,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         return false
     }
 
+    @available(macOS 14, *)
     private func applyProviderIntent(_ record: CKRecord) async throws {
         guard let payloadString = record["payload"] as? String else { return }
         let payload = try CanonicalSyncJSON.decode(ProviderIntentPayload.self, from: payloadString)
@@ -702,6 +752,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         self.persistEnvelope()
     }
 
+    @available(macOS 14, *)
     private func applyPreferences(_ record: CKRecord) async throws {
         guard let payloadString = record["payload"] as? String else { return }
         let payload = try CanonicalSyncJSON.decode(PreferencesSyncPayload.self, from: payloadString)
@@ -711,6 +762,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         }
     }
 
+    @available(macOS 14, *)
     private func applyDevice(_ record: CKRecord) async throws {
         guard let deviceID = record["deviceID"] as? String,
               let hostName = record["hostName"] as? String,
@@ -729,6 +781,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         await MainActor.run { self.state.fleetDevices[record.recordID.recordName] = payload }
     }
 
+    @available(macOS 14, *)
     private func applyAccountSnapshot(_ record: CKRecord) async throws {
         guard let providerRaw = record["provider"] as? String,
               let provider = ProviderInstanceID(rawValue: providerRaw),
@@ -751,6 +804,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         await MainActor.run { self.state.fleetSnapshots[record.recordID.recordName] = payload }
     }
 
+    @available(macOS 14, *)
     private func handleSaveFailure(
         _ failure: CKSyncEngine.Event.SentRecordZoneChanges.FailedRecordSave,
         syncEngine: CKSyncEngine) async
@@ -778,6 +832,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         }
     }
 
+    @available(macOS 14, *)
     private func recreateZoneAndRequeue(_ record: CKRecord, syncEngine: CKSyncEngine) {
         if self.desiredRecords[record.recordID] == nil {
             self.desiredRecords[record.recordID] = record
@@ -786,6 +841,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         syncEngine.state.add(pendingRecordZoneChanges: [.saveRecord(record.recordID)])
     }
 
+    @available(macOS 14, *)
     private func scheduleRetry(recordID: CKRecord.ID, after delay: TimeInterval) {
         Task { [weak self] in
             do {
@@ -802,6 +858,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         }
     }
 
+    @available(macOS 14, *)
     private func resolveConflict(with server: CKRecord, syncEngine: CKSyncEngine) async {
         guard self.schemaVersion(server) <= CodexBarSyncSchema.currentVersion else {
             syncEngine.state.remove(pendingRecordZoneChanges: [.saveRecord(server.recordID)])
@@ -831,6 +888,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         }
     }
 
+    @available(macOS 14, *)
     private func scheduleFetchChanges(scopedToSyncZone: Bool) {
         Task { [weak self] in
             await Task.yield()
@@ -843,6 +901,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         }
     }
 
+    @available(macOS 14, *)
     private func fetchAllChanges() async {
         guard self.enabled, let engine = self.engine else { return }
         do {
@@ -853,6 +912,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         }
     }
 
+    @available(macOS 14, *)
     private func startPeriodicFetchTimer() {
         self.periodicFetchTask?.cancel()
         self.periodicFetchTask = Task { [weak self] in
@@ -867,6 +927,7 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         }
     }
 
+    @available(macOS 14, *)
     private func stopEngine(clearPersistence: Bool) async {
         self.configPushTask?.cancel()
         self.snapshotPushTask?.cancel()
@@ -984,6 +1045,13 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         await MainActor.run { self.state.status.lastError = error.localizedDescription }
     }
 
+    private func markUnsupportedSystem() async {
+        await MainActor.run {
+            self.state.availability = .restricted
+            self.state.status.lastError = Self.unsupportedSystemMessage
+        }
+    }
+
     private static func deviceModel() -> String {
         var size = 0
         guard sysctlbyname("hw.model", nil, &size, nil, 0) == 0, size > 0 else { return "unknown" }
@@ -993,3 +1061,6 @@ actor CloudSyncEngine: CKSyncEngineDelegate {
         return String(bytes: bytes, encoding: .utf8) ?? "unknown"
     }
 }
+
+@available(macOS 14, *)
+extension CloudSyncEngine: CKSyncEngineDelegate {}

@@ -2,6 +2,60 @@ import CloudKit
 import CodexBarCore
 import Foundation
 
+private enum CloudSyncJSONValue: Codable, Sendable {
+    case object([String: CloudSyncJSONValue])
+    case array([CloudSyncJSONValue])
+    case string(String)
+    case integer(Int64)
+    case unsignedInteger(UInt64)
+    case number(Double)
+    case bool(Bool)
+    case null
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if container.decodeNil() {
+            self = .null
+        } else if let value = try? container.decode(Bool.self) {
+            self = .bool(value)
+        } else if let value = try? container.decode(Int64.self) {
+            self = .integer(value)
+        } else if let value = try? container.decode(UInt64.self) {
+            self = .unsignedInteger(value)
+        } else if let value = try? container.decode(Double.self) {
+            self = .number(value)
+        } else if let value = try? container.decode(String.self) {
+            self = .string(value)
+        } else if let value = try? container.decode([CloudSyncJSONValue].self) {
+            self = .array(value)
+        } else {
+            self = try .object(container.decode([String: CloudSyncJSONValue].self))
+        }
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case let .object(value):
+            try container.encode(value)
+        case let .array(value):
+            try container.encode(value)
+        case let .string(value):
+            try container.encode(value)
+        case let .integer(value):
+            try container.encode(value)
+        case let .unsignedInteger(value):
+            try container.encode(value)
+        case let .number(value):
+            try container.encode(value)
+        case let .bool(value):
+            try container.encode(value)
+        case .null:
+            try container.encodeNil()
+        }
+    }
+}
+
 struct CloudSyncPersistence: Sendable {
     struct RecordMetadata: Codable, Sendable {
         var recordType: String
@@ -11,7 +65,10 @@ struct CloudSyncPersistence: Sendable {
     }
 
     struct Envelope: Codable, Sendable {
-        var stateSerialization: CKSyncEngine.State.Serialization?
+        /// Opaque JSON encoding of `CKSyncEngine.State.Serialization` on macOS 14+.
+        /// Keeping this availability-neutral prevents the persisted envelope from exposing
+        /// a macOS 14-only type to the macOS 12/13 build.
+        var stateSerialization: Data?
         var encodedSystemFields: [String: Data]
         var recordMetadata: [String: RecordMetadata]
         var suppressedEnableIntents: Set<String>
@@ -21,7 +78,7 @@ struct CloudSyncPersistence: Sendable {
         var fleetSnapshots: [String: AccountSnapshotSyncPayload]
 
         init(
-            stateSerialization: CKSyncEngine.State.Serialization?,
+            stateSerialization: Data?,
             encodedSystemFields: [String: Data],
             recordMetadata: [String: RecordMetadata] = [:],
             suppressedEnableIntents: Set<String> = [],
@@ -54,8 +111,8 @@ struct CloudSyncPersistence: Sendable {
         init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.stateSerialization = try container.decodeIfPresent(
-                CKSyncEngine.State.Serialization.self,
-                forKey: .stateSerialization)
+                CloudSyncJSONValue.self,
+                forKey: .stateSerialization).map { try JSONEncoder().encode($0) }
             self.encodedSystemFields = try container.decodeIfPresent(
                 [String: Data].self,
                 forKey: .encodedSystemFields) ?? [:]
@@ -77,6 +134,21 @@ struct CloudSyncPersistence: Sendable {
             self.fleetSnapshots = try container.decodeIfPresent(
                 [String: AccountSnapshotSyncPayload].self,
                 forKey: .fleetSnapshots) ?? [:]
+        }
+
+        func encode(to encoder: any Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            if let stateSerialization {
+                let value = try JSONDecoder().decode(CloudSyncJSONValue.self, from: stateSerialization)
+                try container.encode(value, forKey: .stateSerialization)
+            }
+            try container.encode(self.encodedSystemFields, forKey: .encodedSystemFields)
+            try container.encode(self.recordMetadata, forKey: .recordMetadata)
+            try container.encode(self.suppressedEnableIntents, forKey: .suppressedEnableIntents)
+            try container.encode(self.dirtyProviders, forKey: .dirtyProviders)
+            try container.encode(self.preferencesDirty, forKey: .preferencesDirty)
+            try container.encode(self.fleetDevices, forKey: .fleetDevices)
+            try container.encode(self.fleetSnapshots, forKey: .fleetSnapshots)
         }
     }
 
@@ -125,6 +197,17 @@ struct CloudSyncPersistence: Sendable {
         unarchiver.requiresSecureCoding = true
         defer { unarchiver.finishDecoding() }
         return CKRecord(coder: unarchiver)
+    }
+
+    @available(macOS 14, *)
+    static func encodeStateSerialization(_ serialization: CKSyncEngine.State.Serialization) throws -> Data {
+        try JSONEncoder().encode(serialization)
+    }
+
+    @available(macOS 14, *)
+    static func decodeStateSerialization(_ data: Data?) -> CKSyncEngine.State.Serialization? {
+        guard let data else { return nil }
+        return try? JSONDecoder().decode(CKSyncEngine.State.Serialization.self, from: data)
     }
 
     static func cacheSystemFields(of record: CKRecord, in envelope: inout Envelope) {
