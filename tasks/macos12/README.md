@@ -6,7 +6,7 @@
 
 | ID | 状态 | Owner | 依赖 | 文件 |
 |---|---|---|---|---|
-| MAC12-00 | IN_PROGRESS | coordinator | - | [TASK-00](TASK-00-baseline.md) |
+| MAC12-00 | COMPLETE | coordinator | - | [TASK-00](TASK-00-baseline.md) |
 | MAC12-01 | READY | unassigned | MAC12-00 | [TASK-01](TASK-01-package-perception.md) |
 | MAC12-02 | READY | unassigned | MAC12-00 | [TASK-02](TASK-02-swiftui-compat.md) |
 | MAC12-03 | READY | unassigned | MAC12-00 | [TASK-03](TASK-03-settings-lifecycle.md) |
