@@ -3,8 +3,8 @@ import AppKit
 import Charts
 #endif
 import CodexBarCore
-import SwiftUI
 import Perception
+import SwiftUI
 
 func spendDashboardDayRangeText(_ days: Int) -> String {
     let template: String
@@ -81,7 +81,6 @@ struct SpendDashboardPane: View {
     }
 
     var body: some View {
-
         WithPerceptionTracking {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
@@ -126,9 +125,7 @@ struct SpendDashboardPane: View {
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
                 self.controller.refreshDateWindow()
             }
-
         }
-
     }
 
     private var configuration: SpendDashboardConfiguration {
@@ -421,7 +418,6 @@ private struct SpendCurrencySection: View {
     let requestedDays: Int
 
     var body: some View {
-
         WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .firstTextBaseline) {
@@ -464,9 +460,7 @@ private struct SpendCurrencySection: View {
                 SpendModelPanel(group: self.group)
                 SpendDailyChart(group: self.group)
             }
-
         }
-
     }
 }
 
@@ -475,7 +469,6 @@ private struct SpendSummaryValue: View {
     let value: String
 
     var body: some View {
-
         WithPerceptionTracking {
             VStack(alignment: .leading, spacing: 5) {
                 Text(self.title)
@@ -485,9 +478,7 @@ private struct SpendSummaryValue: View {
                     .font(.system(.title2, design: .rounded, weight: .semibold))
                     .monospacedDigit()
             }
-
         }
-
     }
 }
 
@@ -495,7 +486,6 @@ private struct SpendProviderPanel: View {
     let group: SpendDashboardModel.CurrencyGroup
 
     var body: some View {
-
         WithPerceptionTracking {
             SpendDashboardPanel {
                 VStack(alignment: .leading, spacing: 0) {
@@ -522,9 +512,7 @@ private struct SpendProviderPanel: View {
                     }
                 }
             }
-
         }
-
     }
 }
 
@@ -532,7 +520,6 @@ private struct SpendModelPanel: View {
     let group: SpendDashboardModel.CurrencyGroup
 
     var body: some View {
-
         WithPerceptionTracking {
             SpendDashboardPanel {
                 VStack(alignment: .leading, spacing: 0) {
@@ -586,9 +573,7 @@ private struct SpendModelPanel: View {
                     }
                 }
             }
-
         }
-
     }
 }
 
@@ -627,7 +612,6 @@ private struct SpendDailyChart: View {
     let group: SpendDashboardModel.CurrencyGroup
 
     var body: some View {
-
         WithPerceptionTracking {
             let presentation = SpendDailyChartPresentation(
                 dailyPoints: self.group.dailyPoints,
@@ -655,9 +639,7 @@ private struct SpendDailyChart: View {
                     }
                 }
             }
-
         }
-
     }
 
     private func macOS12Fallback(presentation: SpendDailyChartPresentation) -> some View {
@@ -747,7 +729,6 @@ private struct SpendProviderIcon: View {
     let provider: UsageProvider
 
     var body: some View {
-
         WithPerceptionTracking {
             Group {
                 if let icon = ProviderBrandIcon.image(for: self.provider) {
@@ -758,9 +739,7 @@ private struct SpendProviderIcon: View {
             }
             .frame(width: 20, height: 20)
             .accessibilityHidden(true)
-
         }
-
     }
 }
 
@@ -768,7 +747,6 @@ private struct SpendDashboardPanel<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-
         WithPerceptionTracking {
             self.content
                 .padding(16)
@@ -777,8 +755,6 @@ private struct SpendDashboardPanel<Content: View>: View {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .strokeBorder(Color(nsColor: .separatorColor).opacity(0.35))
                 }
-
         }
-
     }
 }

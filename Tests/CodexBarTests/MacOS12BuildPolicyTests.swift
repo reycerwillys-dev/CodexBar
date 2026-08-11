@@ -8,16 +8,16 @@ struct MacOS12BuildPolicyTests {
         .deletingLastPathComponent()
         .deletingLastPathComponent()
 
-    @Test("package manifest keeps the Monterey deployment target")
-    func packageManifestDeploymentTarget() throws {
+    @Test
+    func `package manifest keeps the Monterey deployment target`() throws {
         let manifest = try Self.contents(of: "Package.swift")
 
         #expect(manifest.contains("// swift-tools-version: 6.2"))
         #expect(manifest.contains(".macOS(.v12)"))
     }
 
-    @Test("build automation fixes architecture, deployment target, and credential isolation")
-    func buildAutomationContract() throws {
+    @Test
+    func `build automation fixes architecture, deployment target, and credential isolation`() throws {
         let script = try Self.contents(of: "Scripts/build_macos12_x86_64.sh")
 
         #expect(script.contains("TARGET_ARCH=x86_64"))
@@ -31,8 +31,8 @@ struct MacOS12BuildPolicyTests {
         }
     }
 
-    @Test("workflow reuses the verified Intel and Xcode selection pattern")
-    func workflowContract() throws {
+    @Test
+    func `workflow reuses the verified Intel and Xcode selection pattern`() throws {
         let workflow = try Self.contents(of: ".github/workflows/macos12-compat.yml")
 
         #expect(workflow.contains("runs-on: macos-15-intel"))
@@ -46,7 +46,7 @@ struct MacOS12BuildPolicyTests {
 
     private static func contents(of relativePath: String) throws -> String {
         try String(
-            contentsOf: Self.repositoryRoot.appendingPathComponent(relativePath),
+            contentsOf: self.repositoryRoot.appendingPathComponent(relativePath),
             encoding: .utf8)
     }
 }

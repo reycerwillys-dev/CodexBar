@@ -36,45 +36,45 @@ public struct Duration: Sendable, Hashable, Comparable, AdditiveArithmetic, Cust
         return "\(Double(self.secondsValue) + fractionalSeconds) seconds"
     }
 
-    public static func seconds<Value: BinaryInteger>(_ seconds: Value) -> Duration {
+    public static func seconds(_ seconds: some BinaryInteger) -> Duration {
         Duration(seconds: Int64(clamping: seconds), attoseconds: 0)
     }
 
-    public static func seconds<Value: BinaryFloatingPoint>(_ seconds: Value) -> Duration {
-        Self.fromFloatingSeconds(Double(seconds))
+    public static func seconds(_ seconds: some BinaryFloatingPoint) -> Duration {
+        self.fromFloatingSeconds(Double(seconds))
     }
 
-    public static func milliseconds<Value: BinaryInteger>(_ milliseconds: Value) -> Duration {
-        Self.fromIntegerUnits(
+    public static func milliseconds(_ milliseconds: some BinaryInteger) -> Duration {
+        self.fromIntegerUnits(
             Int64(clamping: milliseconds),
-            unitsPerSecond: 1_000,
-            attosecondsPerUnit: Self.attosecondsPerMillisecond)
+            unitsPerSecond: 1000,
+            attosecondsPerUnit: self.attosecondsPerMillisecond)
     }
 
-    public static func milliseconds<Value: BinaryFloatingPoint>(_ milliseconds: Value) -> Duration {
-        Self.fromFloatingSeconds(Double(milliseconds) / 1_000)
+    public static func milliseconds(_ milliseconds: some BinaryFloatingPoint) -> Duration {
+        self.fromFloatingSeconds(Double(milliseconds) / 1000)
     }
 
-    public static func microseconds<Value: BinaryInteger>(_ microseconds: Value) -> Duration {
-        Self.fromIntegerUnits(
+    public static func microseconds(_ microseconds: some BinaryInteger) -> Duration {
+        self.fromIntegerUnits(
             Int64(clamping: microseconds),
             unitsPerSecond: 1_000_000,
-            attosecondsPerUnit: Self.attosecondsPerMicrosecond)
+            attosecondsPerUnit: self.attosecondsPerMicrosecond)
     }
 
-    public static func microseconds<Value: BinaryFloatingPoint>(_ microseconds: Value) -> Duration {
-        Self.fromFloatingSeconds(Double(microseconds) / 1_000_000)
+    public static func microseconds(_ microseconds: some BinaryFloatingPoint) -> Duration {
+        self.fromFloatingSeconds(Double(microseconds) / 1_000_000)
     }
 
-    public static func nanoseconds<Value: BinaryInteger>(_ nanoseconds: Value) -> Duration {
-        Self.fromIntegerUnits(
+    public static func nanoseconds(_ nanoseconds: some BinaryInteger) -> Duration {
+        self.fromIntegerUnits(
             Int64(clamping: nanoseconds),
             unitsPerSecond: 1_000_000_000,
-            attosecondsPerUnit: Self.attosecondsPerNanosecond)
+            attosecondsPerUnit: self.attosecondsPerNanosecond)
     }
 
-    public static func nanoseconds<Value: BinaryFloatingPoint>(_ nanoseconds: Value) -> Duration {
-        Self.fromFloatingSeconds(Double(nanoseconds) / 1_000_000_000)
+    public static func nanoseconds(_ nanoseconds: some BinaryFloatingPoint) -> Duration {
+        self.fromFloatingSeconds(Double(nanoseconds) / 1_000_000_000)
     }
 
     public static func < (lhs: Duration, rhs: Duration) -> Bool {
@@ -100,13 +100,13 @@ public struct Duration: Sendable, Hashable, Comparable, AdditiveArithmetic, Cust
 
     public static prefix func - (duration: Duration) -> Duration {
         if duration.secondsValue == Int64.min {
-            return Self.maximum
+            return self.maximum
         }
         return Duration(seconds: -duration.secondsValue, attoseconds: -duration.attosecondsValue)
     }
 
     public static func * (lhs: Duration, rhs: Double) -> Duration {
-        Self.fromFloatingSeconds(lhs.timeInterval * rhs)
+        self.fromFloatingSeconds(lhs.timeInterval * rhs)
     }
 
     public static func * (lhs: Double, rhs: Duration) -> Duration {
@@ -114,7 +114,7 @@ public struct Duration: Sendable, Hashable, Comparable, AdditiveArithmetic, Cust
     }
 
     public static func / (lhs: Duration, rhs: Double) -> Duration {
-        Self.fromFloatingSeconds(lhs.timeInterval / rhs)
+        self.fromFloatingSeconds(lhs.timeInterval / rhs)
     }
 
     fileprivate var timeInterval: TimeInterval {
@@ -178,8 +178,8 @@ public struct Duration: Sendable, Hashable, Comparable, AdditiveArithmetic, Cust
 
     private static func fromFloatingSeconds(_ value: Double) -> Duration {
         guard !value.isNaN else { return .zero }
-        if value >= Double(Int64.max) { return Self.maximum }
-        if value <= Double(Int64.min) { return Self.minimum }
+        if value >= Double(Int64.max) { return self.maximum }
+        if value <= Double(Int64.min) { return self.minimum }
 
         let seconds = value.rounded(.towardZero)
         let fractional = value - seconds
@@ -271,9 +271,9 @@ public struct ContinuousClock: Sendable {
     }
 }
 
-public extension Task where Success == Never, Failure == Never {
+extension Task where Success == Never, Failure == Never {
     /// Monterey-compatible counterpart to the macOS 13 `Task.sleep(for:)` convenience.
-    static func sleep(for duration: Duration) async throws {
+    public static func sleep(for duration: Duration) async throws {
         try Task<Never, Never>.checkCancellation()
         let nanoseconds = duration.nonnegativeSleepNanoseconds
         guard nanoseconds > 0 else { return }

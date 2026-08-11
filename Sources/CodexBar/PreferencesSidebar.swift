@@ -12,7 +12,6 @@ struct SettingsSidebarView: View {
     @State private var searchText = ""
 
     var body: some View {
-
         WithPerceptionTracking {
             VStack(spacing: 0) {
                 HStack(spacing: 6) {
@@ -31,9 +30,7 @@ struct SettingsSidebarView: View {
                 .codexbarScrollContentBackgroundHidden()
             }
             .padding(.horizontal, 8)
-
         }
-
     }
 
     private var appPanesSection: some View {
@@ -146,16 +143,13 @@ private struct SettingsSidebarPaneRow: View {
     let color: Color
 
     var body: some View {
-
         WithPerceptionTracking {
             HStack(spacing: 8) {
                 SettingsIconChip(systemImage: self.systemImage, color: self.color)
                 Text(self.pane.title)
             }
             .tag(self.pane)
-
         }
-
     }
 }
 
@@ -187,7 +181,6 @@ private struct SettingsSidebarProviderRow: View {
     @Binding var isEnabled: Bool
 
     var body: some View {
-
         WithPerceptionTracking {
             HStack(spacing: 8) {
                 SettingsSidebarBrandIcon(provider: self.provider, isEnabled: self.isEnabled)
@@ -213,9 +206,7 @@ private struct SettingsSidebarProviderRow: View {
                 }
             }
             .accessibilityLabel(self.accessibilityLabel)
-
         }
-
     }
 
     private var accessibilityLabel: String {
@@ -230,7 +221,6 @@ private struct SettingsSidebarBrandIcon: View {
     let isEnabled: Bool
 
     var body: some View {
-
         WithPerceptionTracking {
             Group {
                 if let brand = ProviderBrandIcon.image(for: self.provider) {
@@ -246,9 +236,7 @@ private struct SettingsSidebarBrandIcon: View {
             .frame(width: 16, height: 16)
             .foregroundStyle(self.isEnabled ? .primary : .secondary)
             .accessibilityHidden(true)
-
         }
-
     }
 }
 
@@ -256,15 +244,12 @@ private struct SettingsSidebarStatusDot: View {
     let indicator: ProviderStatusIndicator
 
     var body: some View {
-
         WithPerceptionTracking {
             Circle()
                 .fill(self.statusColor)
                 .frame(width: 6, height: 6)
                 .accessibilityHidden(true)
-
         }
-
     }
 
     private var statusColor: Color {
@@ -283,7 +268,6 @@ private struct SettingsSidebarSearchField: View {
     @Binding var searchText: String
 
     var body: some View {
-
         WithPerceptionTracking {
             HStack(spacing: 5) {
                 Image(systemName: "magnifyingglass")
@@ -313,9 +297,7 @@ private struct SettingsSidebarSearchField: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .stroke(Color(nsColor: .separatorColor).opacity(0.6), lineWidth: 1))
-
         }
-
     }
 }
 
@@ -323,7 +305,6 @@ private struct SettingsSidebarSortToggle: View {
     @Binding var isOn: Bool
 
     var body: some View {
-
         WithPerceptionTracking {
             Button {
                 self.isOn.toggle()
@@ -340,8 +321,6 @@ private struct SettingsSidebarSortToggle: View {
                 : L("Sort providers alphabetically (enabled first)"))
             .accessibilityLabel(L("Sort providers alphabetically"))
             .accessibilityAddTraits(self.isOn ? .isSelected : [])
-
         }
-
     }
 }

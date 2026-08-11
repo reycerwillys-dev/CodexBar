@@ -3,6 +3,8 @@ import CodexBarCore
 import SwiftUI
 import WidgetKit
 
+// SwiftUI's @Entry macro is unavailable when deploying to Monterey.
+// swiftformat:disable environmentEntry
 private struct WidgetUsageShowsUsedKey: EnvironmentKey {
     static let defaultValue = false
 }
@@ -14,8 +16,9 @@ extension EnvironmentValues {
     }
 }
 
+// swiftformat:enable environmentEntry
+
 private struct CodexBarDefaultWidgetBackgroundModifier: ViewModifier {
-    @ViewBuilder
     func body(content: Content) -> some View {
         if #available(macOS 14, *) {
             CodexBarAvailableDefaultWidgetBackground(content: content)
@@ -37,7 +40,6 @@ private struct CodexBarAvailableDefaultWidgetBackground<Content: View>: View {
 private struct CodexBarWidgetBackgroundModifier<Background: View>: ViewModifier {
     let background: Background
 
-    @ViewBuilder
     func body(content: Content) -> some View {
         if #available(macOS 14, *) {
             CodexBarAvailableWidgetBackground(content: content, background: self.background)
@@ -64,8 +66,8 @@ extension View {
         self.modifier(CodexBarDefaultWidgetBackgroundModifier())
     }
 
-    func codexbarWidgetBackground<Background: View>(
-        @ViewBuilder background: () -> Background) -> some View
+    func codexbarWidgetBackground(
+        @ViewBuilder background: () -> some View) -> some View
     {
         self.modifier(CodexBarWidgetBackgroundModifier(background: background()))
     }

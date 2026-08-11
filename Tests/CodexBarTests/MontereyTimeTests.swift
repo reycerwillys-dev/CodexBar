@@ -3,8 +3,8 @@ import Testing
 
 @Suite("Monterey time compatibility")
 struct MontereyTimeTests {
-    @Test("duration arithmetic normalizes fractional seconds")
-    func durationArithmetic() {
+    @Test
+    func `duration arithmetic normalizes fractional seconds`() {
         let duration = Duration.milliseconds(1500) + .milliseconds(750)
 
         #expect(duration.components.seconds == 2)
@@ -12,8 +12,8 @@ struct MontereyTimeTests {
         #expect(duration - .milliseconds(250) == .seconds(2))
     }
 
-    @Test("continuous-clock instants preserve monotonic offsets")
-    func continuousClockOffsets() {
+    @Test
+    func `continuous-clock instants preserve monotonic offsets`() {
         let start = ContinuousClock.now
         let deadline = start.advanced(by: .milliseconds(125))
 

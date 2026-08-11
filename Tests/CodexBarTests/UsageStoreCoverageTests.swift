@@ -868,7 +868,7 @@ extension UsageStoreCoverageTests {
     }
 
     @Test
-    func `background work settings observation re-subscribes after every change`() async throws {
+    func `background work settings observation re-subscribes after every change`() async {
         let settings = Self.makeSettingsStore(suite: "UsageStoreCoverageTests-observation-resubscribe")
         settings.refreshFrequency = .manual
         settings.statusChecksEnabled = false

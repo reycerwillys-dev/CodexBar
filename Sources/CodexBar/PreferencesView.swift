@@ -93,7 +93,6 @@ struct PreferencesView: View {
     }
 
     var body: some View {
-
         WithPerceptionTracking {
             HStack(spacing: 0) {
                 // Golden Gate-style sidebar: edge-to-edge material with a hairline separator,
@@ -142,9 +141,7 @@ struct PreferencesView: View {
                 guard shouldRequest else { return }
                 AdaptiveActivityConsentPresenter.presentIfNeeded(settings: self.settings)
             }
-
         }
-
     }
 
     @ViewBuilder

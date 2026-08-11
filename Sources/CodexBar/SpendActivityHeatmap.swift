@@ -482,8 +482,7 @@ private struct SpendActivityDailyGrid: View {
                             } else {
                                 self.hoveredIndex = nil
                             }
-                        }
-                    )
+                        })
                     .offset(x: gridFrame.minX)
                 }
             }
@@ -761,8 +760,7 @@ private struct SpendActivityWeekGrid: View {
                     } else {
                         self.hoverLocation = nil
                     }
-                }
-            )
+                })
             .offset(x: gridFrame.minX)
         }
         .aspectRatio(CGFloat(self.columns + 2) / CGFloat(self.rows), contentMode: .fit)

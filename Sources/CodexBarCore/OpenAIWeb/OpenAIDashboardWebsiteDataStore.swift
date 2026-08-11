@@ -32,11 +32,10 @@ public enum OpenAIDashboardWebsiteDataStore {
             return cached
         }
 
-        let store: WKWebsiteDataStore
-        if #available(macOS 14.0, *) {
-            store = WKWebsiteDataStore(forIdentifier: Self.identifier(forStorageKey: storageKey))
+        let store: WKWebsiteDataStore = if #available(macOS 14.0, *) {
+            WKWebsiteDataStore(forIdentifier: Self.identifier(forStorageKey: storageKey))
         } else {
-            store = .nonPersistent()
+            .nonPersistent()
         }
         self.cachedStores[storageKey] = store
         return store

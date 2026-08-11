@@ -3,6 +3,8 @@ import CodexBarCore
 import SwiftUI
 import WidgetKit
 
+// SwiftUI's @Entry macro is unavailable when deploying to Monterey.
+// swiftformat:disable environmentEntry
 private struct CodexBarWidgetIsMonochromeKey: EnvironmentKey {
     static let defaultValue = false
 }
@@ -14,12 +16,10 @@ extension EnvironmentValues {
     }
 }
 
-struct CodexBarWidgetRenderingModeCompatibility<Content: View>: View {
-    let content: Content
+// swiftformat:enable environmentEntry
 
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
+struct CodexBarWidgetRenderingModeCompatibility<Content: View>: View {
+    @ViewBuilder let content: Content
 
     var body: some View {
         if #available(macOS 13, *) {
