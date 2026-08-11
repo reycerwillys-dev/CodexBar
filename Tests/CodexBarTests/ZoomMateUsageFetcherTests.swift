@@ -875,7 +875,10 @@ struct ZoomMateUsageFetcherTests {
             case "hostOnly": .hostOnly
             default: throw ZoomMateUsageError.parseFailed("Unknown cookie fixture scope: \(record.scope)")
             }
-            #expect(record.sourceDomain.trimmingPrefix(".") == record.domain)
+            let sourceDomain = record.sourceDomain.hasPrefix(".")
+                ? String(record.sourceDomain.dropFirst())
+                : record.sourceDomain
+            #expect(sourceDomain == record.domain)
             return BrowserCookieRecord(
                 domain: record.domain,
                 name: record.name,

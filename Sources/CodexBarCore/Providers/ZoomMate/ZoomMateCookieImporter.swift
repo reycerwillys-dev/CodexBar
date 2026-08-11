@@ -111,10 +111,12 @@ public enum ZoomMateCookieImporter {
     /// carried separately because Chromium normalizes `.zoom.us` and `zoom.us` to the same domain
     /// string when records become `HTTPCookie` values.
     static func isSendable(cookieDomain: String, scope: BrowserCookieScope, toHost host: String) -> Bool {
-        let normalizedDomain = cookieDomain
+        var normalizedDomain = cookieDomain
             .trimmingCharacters(in: .whitespacesAndNewlines)
-            .trimmingPrefix(".")
             .lowercased()
+        if normalizedDomain.hasPrefix(".") {
+            normalizedDomain.removeFirst()
+        }
         let normalizedHost = host.lowercased()
         guard ZoomMateCookieHeaders.allowedHosts.contains(normalizedHost), !normalizedDomain.isEmpty else {
             return false

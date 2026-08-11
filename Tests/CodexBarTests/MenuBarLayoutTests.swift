@@ -145,7 +145,7 @@ struct MenuBarLayoutTests {
     func `cost today resolves the current calendar day aggregate`() {
         let now = Date(timeIntervalSince1970: 1_752_768_000)
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = .gmt
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? TimeZone(identifier: "GMT") ?? .current
         let snapshot = CostUsageTokenSnapshot(
             sessionTokens: nil,
             sessionCostUSD: 99,

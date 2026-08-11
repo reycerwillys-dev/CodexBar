@@ -43,6 +43,10 @@ SOURCE_PREFILTER_MARKERS = (
     "onKeyPress",
     "OSAllocatedUnfairLock",
     "ExecutorJob",
+    ".gmt",
+    "trimmingPrefix(",
+    "trimmingSuffix(",
+    "split(separator:",
     "appending(path:",
     "append(path:",
     "filePath:",
@@ -106,6 +110,16 @@ FORBIDDEN_RULES = (
         "implement SerialExecutor.enqueue with UnownedJob for the macOS 12 concurrency runtime",
     ),
     Rule(
+        "time-zone-gmt",
+        re.compile(r"(?<![A-Za-z0-9_])[.]gmt\b|\bTimeZone[.]gmt\b"),
+        "construct GMT with TimeZone(secondsFromGMT:) for macOS 12",
+    ),
+    Rule(
+        "string-trimming-affix",
+        re.compile(r"[.]trimming(?:Prefix|Suffix)\s*\("),
+        "use hasPrefix/hasSuffix with dropFirst/dropLast for macOS 12",
+    ),
+    Rule(
         "modern-url-path-api",
         re.compile(
             r"[.]append(?:ing)?\s*\(\s*(?:path|component)\s*:|"
@@ -127,6 +141,17 @@ FORBIDDEN_RULES = (
         "swift-regex-runtime",
         re.compile(r"[.](?:matches|firstMatch)\s*\(\s*of\s*:|(?<![A-Za-z0-9_])Regex\s*\("),
         "use NSRegularExpression/TextParsing to avoid the macOS 13 Swift Regex runtime",
+    ),
+)
+
+
+# These rules need to inspect a literal's contents. Matches are still required to
+# begin in unmasked code, so comments and string contents cannot trigger them.
+RAW_LITERAL_RULES = (
+    Rule(
+        "string-multicharacter-split",
+        re.compile(r"[.]split\s*\(\s*separator\s*:\s*\"(?:\\.|[^\"\\]){2,}\""),
+        "use components(separatedBy:) when splitting on a multi-character String on macOS 12",
     ),
 )
 
@@ -361,6 +386,13 @@ def scan_source(path: Path, display_path: Path | None = None) -> list[Finding]:
             line, column = line_and_column(newlines, match.start())
             findings.append(Finding(reported_path, line, column, rule.name, rule.message))
 
+    for rule in RAW_LITERAL_RULES:
+        for match in rule.pattern.finditer(source):
+            if masked[match.start()] != ".":
+                continue
+            line, column = line_and_column(newlines, match.start())
+            findings.append(Finding(reported_path, line, column, rule.name, rule.message))
+
     guarded_matches: dict[int, list[tuple[Rule, re.Match[str]]]] = {}
     imports_charts = re.search(r"(?m)^\s*import\s+Charts\b", masked) is not None
     for rule in GUARDED_RULES:
@@ -525,6 +557,12 @@ def run_self_tests() -> None:
             "func enqueue(_ job: consuming ExecutorJob) {}",
             1,
         ),
+        (
+            "Monterey Foundation conveniences are required",
+            'calendar.timeZone = .gmt\nlet value = text.trimmingPrefix(".")\n'
+            'let parts = text.split(separator: "::")',
+            3,
+        ),
     )
 
     for name, source, expected_count in fixtures:
@@ -572,7 +610,7 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.list_rules:
-        for rule in (*FORBIDDEN_RULES, *GUARDED_RULES):
+        for rule in (*FORBIDDEN_RULES, *RAW_LITERAL_RULES, *GUARDED_RULES):
             requirement = "forbidden" if rule.minimum_macos is None else f"guard macOS {rule.minimum_macos}+"
             print(f"{rule.name}: {requirement}")
         return 0

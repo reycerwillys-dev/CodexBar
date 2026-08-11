@@ -1566,7 +1566,9 @@ public struct CursorStatusProbe: Sendable {
     {
         let usageURL = self.baseURL.appendingPathComponent("/api/usage")
         var components = URLComponents(url: usageURL, resolvingAgainstBaseURL: false)
-        components?.queryItems = (components?.queryItems ?? []) + [URLQueryItem(name: "user", value: userId)]
+        var queryItems = components?.queryItems ?? []
+        queryItems.append(URLQueryItem(name: "user", value: userId))
+        components?.queryItems = queryItems
         let url = components?.url ?? usageURL
         var request = URLRequest(url: url)
         request.timeoutInterval = try self.requestTimeout(deadline: deadline)

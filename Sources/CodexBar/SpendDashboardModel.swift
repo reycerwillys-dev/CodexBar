@@ -639,7 +639,8 @@ struct SpendDashboardModel: Equatable, Sendable {
         guard provider == .mistral else { return displayCalendar }
         // Mistral labels both daily buckets and snapshot coverage by UTC day. Map each UTC boundary into the
         // containing local dashboard day instead of reinterpreting the label as a local date.
-        return self.gregorianCalendar(timeZone: TimeZone(secondsFromGMT: 0) ?? .gmt)
+        let timeZone = TimeZone(secondsFromGMT: 0) ?? TimeZone(identifier: "GMT") ?? .current
+        return self.gregorianCalendar(timeZone: timeZone)
     }
 
     private static func currencyCode(_ rawValue: String) -> String? {

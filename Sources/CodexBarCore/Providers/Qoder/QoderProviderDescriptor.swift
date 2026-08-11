@@ -809,11 +809,13 @@ struct QoderWebFetchStrategy: ProviderFetchStrategy {
     }
 
     private static func site(forHost host: String) -> QoderWebSite? {
-        var normalized = String(host
+        var normalized = host
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
             .lowercased()
-            .trimmingPrefix("."))
+        if normalized.hasPrefix(".") {
+            normalized.removeFirst()
+        }
         if let portSeparator = normalized.lastIndex(of: ":") {
             let port = normalized[normalized.index(after: portSeparator)...]
             let hostname = normalized[..<portSeparator]

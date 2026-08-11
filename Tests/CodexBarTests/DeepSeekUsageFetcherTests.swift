@@ -766,7 +766,7 @@ struct DeepSeekUsageFetcherTests {
     @Test
     func `usage period supports injected test calendar`() throws {
         var calendar = Calendar(identifier: .buddhist)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? TimeZone(identifier: "GMT") ?? .current
         let date = try #require(Self.utcDate(year: 2026, month: 5, day: 26))
         let period = try DeepSeekUsageFetcher._apiUsagePeriodForTesting(now: date, calendar: calendar)
 
@@ -857,7 +857,7 @@ struct DeepSeekUsageFetcherTests {
 
     private static func utcDate(year: Int, month: Int, day: Int) -> Date? {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? TimeZone(identifier: "GMT") ?? .current
         return calendar.date(from: DateComponents(year: year, month: month, day: day))
     }
 }
