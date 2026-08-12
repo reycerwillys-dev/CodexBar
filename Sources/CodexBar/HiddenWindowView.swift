@@ -98,8 +98,10 @@ final class KeepaliveWindowConfiguratorView: NSView {
         guard let window = self.windowProvider(self) else { return }
 
         window.identifier = NSUserInterfaceItemIdentifier("CodexBarLifecycleKeepalive")
-        // Make the keepalive window truly invisible and non-interactive.
-        window.styleMask = [.borderless]
+        // Do not rewrite styleMask from this NSHostingView move callback. On Monterey,
+        // doing so re-enters SwiftUI's DefaultWindowStyle while AppKit is enumerating
+        // the hosting hierarchy and aborts in _recursiveClearViewWillDidDisappearOnMoveToWindow.
+        // Alpha, placement, sizing, and hit-testing already make this shell invisible.
         var collectionBehavior: NSWindow.CollectionBehavior = [.ignoresCycle, .transient, .canJoinAllSpaces]
         if #available(macOS 13, *) {
             collectionBehavior.insert(.auxiliary)

@@ -15,7 +15,9 @@ struct SettingsWindowOpeningTests {
         configuratorView.viewDidMoveToWindow()
 
         #expect(keepaliveShell.identifier?.rawValue == "CodexBarLifecycleKeepalive")
-        #expect(keepaliveShell.styleMask == [.borderless])
+        // The configurator must not mutate styleMask from viewDidMoveToWindow: doing so
+        // recursively re-enters SwiftUI's DefaultWindowStyle on macOS 12.
+        #expect(keepaliveShell.styleMask == [.titled])
         #expect(keepaliveShell.alphaValue == 0)
         #expect(keepaliveShell.frame.size == NSSize(width: 1, height: 1))
 
