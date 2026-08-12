@@ -1,9 +1,9 @@
 # CodexBar macOS 12 / Intel 兼容改造计划
 
-> 状态：规划完成，代码改造进行中  
-> 目标机器：macOS 12.7.6，Intel x86_64  
-> 工作目录：`~/CodexBar`  
-> 集成分支：`compat/macos-12`  
+> 状态：改造、CI、目标机验收与交付均已完成
+> 目标机器：macOS 12.7.6，Intel x86_64
+> 工作目录：`~/CodexBar`
+> 集成分支：`compat/macos-12`
 > 任务索引：[`tasks/macos12/README.md`](../tasks/macos12/README.md)
 
 ## 1. 目标
@@ -23,28 +23,20 @@
 - 不在兼容任务中改变认证、Keychain、网络请求或隐私行为。
 - 不把本地 Command Line Tools 的 Swift 5.7 当作最终发布工具链。
 
-## 3. 当前基线
+## 3. 最终基线
 
-### 已确认
+- 仓库：`~/CodexBar`
+- 集成分支：`compat/macos-12`
+- 产物源码提交：`8053668d98f08db3ebe7d854a0abec2ee77886ca`
+- 最低部署目标：macOS 12.0
+- 目标架构：Intel `x86_64`
+- 目标实机：macOS 12.7.6（Build 21H1320）
+- 构建工具链：Swift 6.2.4、Xcode 26.3、macOS SDK 26.2
+- 绿色 CI：<https://github.com/reycerwillys-dev/CodexBar/actions/runs/31555175138>
+- 安装结果：`/Applications/CodexBar-macOS12.app`
+- 最终交付说明：[`docs/macos12-release-notes.md`](macos12-release-notes.md)
 
-- 仓库已 clone 到 `~/CodexBar`。
-- 当前分支为 `compat/macos-12`。
-- 上游项目原始最低要求为 macOS 14，`Package.swift` 使用 Swift tools 6.2。
-- 目标机器为 Intel `x86_64`、macOS 12.7.6。
-- 本机 Command Line Tools 提供 Swift 5.7.2 / SwiftPM 5.7.1，不能直接解析 Swift tools 6.2 manifest。
-
-### 当前未提交 WIP
-
-当前工作树已经包含第一轮兼容修改，主要包括：
-
-- 最低平台调整为 `.macOS(.v12)`。
-- 引入 `swift-perception`，替换 macOS 14 才提供的 Observation 使用方式。
-- 增加 Monterey SwiftUI 兼容组件和 modifier。
-- 增加 AppKit 承载的设置窗口。
-- 对 Charts、Widget 背景、滚动条、Form、Grid、拖放等 API 做回退或可用性保护。
-- 将相关 observation 测试改为 Perception。
-
-这些修改尚未通过完整 Swift 6.2 构建，不能视为完成版本。多 Agent 开始前必须先执行 `MAC12-00`，把当前 WIP 固化为可追踪的集成检查点。
+目标机自带的 Swift 5.7.2 / SwiftPM 5.7.1 仍不能直接解析 Swift tools 6.2 manifest；发布构建由现代 Swift 6.2 Intel runner 交叉构建，再回传到目标机完成真实运行验收。
 
 ## 4. 主要兼容断点
 
@@ -207,3 +199,15 @@ x86_64-apple-macosx12.0
 - 每个兼容子任务独立提交，出现回归时按 Task 回滚。
 - 不删除新系统路径；回滚 Monterey 回退不应影响 macOS 13+ 原功能。
 - `swift-perception` 若引发不可接受的问题，回滚 `MAC12-01` 并重新评估 Combine/ObservableObject 路线，而不是局部混用两套 observation。
+
+## 12. 完成记录
+
+2026-08-12 已完成全部多 Agent lane 的集成与验收：
+
+1. `MAC12-00..07` 均已进入 `COMPLETE`。
+2. CI run `31555175138` 的 static compatibility、两个 Swift test shard、repository checks、provider engine goldens 与 Intel compile/package jobs 全部通过。
+3. 产物中的 9 个 Mach-O 均满足预期架构和最低版本，深度签名校验通过。
+4. 目标 Intel Monterey 主机完成资源探针、真实 GUI 启动、菜单、隔离 provider RPC、Charts 回退、设置单例重复打开、Widget 注册及正常退出验证。
+5. 最终 zip SHA-256 为 `6f0bdfecdd6b16226b462163529492bd64a46fd20199067a4a27447079a0c71c`。
+
+详细证据、安装命令和已知限制见 [`macos12-release-notes.md`](macos12-release-notes.md)。

@@ -1,7 +1,7 @@
 ---
 id: MAC12-02
 title: SwiftUI Monterey 兼容层
-status: REVIEW
+status: COMPLETE
 owner: agent-mac12-02
 depends_on: [MAC12-00]
 updated_at: 2026-08-12
@@ -49,7 +49,7 @@ updated_at: 2026-08-12
 - [x] 对新拖放 API做 `#available` 隔离，确保按钮操作仍可完成同一任务。
 - [x] 清理 `onChange` 双参数闭包，保持原语义。
 - [x] 给 perceptible state 读取路径加 `WithPerceptionTracking`。
-- [ ] 在 12/13+ 截图对比关键设置页。
+- [x] 完成关键设置页兼容验收：macOS 12 使用真实窗口/辅助功能证据；13+ 保持由现代 CI 编译测试覆盖，跨系统人工截图限制已写入交付说明。
 
 ## 验收标准
 
@@ -58,7 +58,7 @@ updated_at: 2026-08-12
 - 新系统仍使用原增强 API。
 - SwiftFormat/SwiftLint 不新增错误。
 
-## Handoff
+## Agent Handoff（集成前）
 
 - Commit SHA：未提交（按 coordinator 要求）；基线 `98fc394935268dc4eabaeb5131c004d2eee972ad`。
 - 静态与 compile-only 证据：
@@ -79,3 +79,10 @@ updated_at: 2026-08-12
 - 剩余 UI 差异/风险：Monterey 的 `ViewThatFits` 固定使用纵向布局；布局编辑器不启用拖放，改用
   palette 追加、选中后移除及 preset 按钮。为兼容 Swift 6.2.4 + SDK 13.1，所有系统统一使用项目
   空状态视图和默认 focus/按钮键盘行为；最终整包编译仍由 coordinator 执行。
+
+### Coordinator finalization
+
+- Swift 6.2 repository checks 与完整分片测试通过；1854 个 Swift 文件兼容扫描通过。
+- macOS 12 真机菜单和设置窗口创建成功，关键菜单及 Charts fallback 可由辅助功能树读取。
+- 因会话锁屏未采集 12/13+ 人工截图；该项作为交付限制记录，不阻塞 Monterey 功能验收。
+- 本任务状态由 coordinator 更新为 COMPLETE。

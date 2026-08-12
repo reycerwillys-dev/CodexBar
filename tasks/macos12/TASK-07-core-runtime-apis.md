@@ -1,7 +1,7 @@
 ---
 id: MAC12-07
 title: Core / CLI Foundation 与系统 API 回退
-status: REVIEW
+status: COMPLETE
 owner: agent-mac12-07
 depends_on: [MAC12-00]
 updated_at: 2026-08-12
@@ -75,7 +75,7 @@ macOS 12 部署目标不会引用缺失符号，同时保持 URL 路径、编码
 - 未修改 `MAC12-01..05` 的 exclusive paths。
 - 任务文件记录验证结果、工具链阻塞和剩余风险。
 
-## Handoff
+## Agent Handoff（集成前）
 
 - Commit SHA：不提交，由 coordinator 集成。
 - API 清单：
@@ -94,3 +94,10 @@ macOS 12 部署目标不会引用缺失符号，同时保持 URL 路径、编码
   - 独立 Swift 6.2.4 typecheck `MontereyTime`、调用端名称解析和 `AdaptiveRefreshCore` 通过。
 - 风险：本机 SwiftPM 5.7 无法解析 tools 6.2 manifest；全量 Swift 6.2 build/test、现代 SDK availability
   诊断和目标机 App runtime 由 `MAC12-06` 的 CI/产物验收完成。
+
+### Coordinator finalization
+
+- 1854 个 Swift 文件的 macOS 12 compatibility scan、repository checks 与全部分片测试通过。
+- Intel release App/CLI helpers 在目标机通过资源探针与实际运行，未发现缺失 Foundation/AppKit 符号。
+- 隔离 Codex app-server RPC 连续执行 initialize、account/read、account/rateLimits/read 成功。
+- 本任务状态由 coordinator 更新为 COMPLETE。

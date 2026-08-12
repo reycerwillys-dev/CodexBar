@@ -1,7 +1,7 @@
 ---
 id: MAC12-01
 title: Package 与 Perception 迁移
-status: REVIEW
+status: COMPLETE
 owner: agent-mac12-01
 depends_on: [MAC12-00]
 updated_at: 2026-08-12
@@ -46,8 +46,8 @@ updated_at: 2026-08-12
 - [x] 核对 `@Perceptible`、`@PerceptionIgnored`、`@Perception.Bindable` 使用。
 - [x] 核对所有 `withPerceptionTracking` 重新订阅逻辑。
 - [x] 确保本 lane SwiftUI 读取 perceptible state 的 body 使用 `WithPerceptionTracking`。
-- [ ] 运行 observation 行为测试，确认 onChange 仍会重复订阅。
-- [ ] 检查严格并发和 MainActor 诊断。
+- [x] 运行 observation 行为测试，确认 onChange 仍会重复订阅。
+- [x] 检查严格并发和 MainActor 诊断。
 
 ## 验收标准
 
@@ -65,7 +65,7 @@ updated_at: 2026-08-12
   `UsageMenuCardCreditsSectionView`、`UsageMenuCardCostSectionView` 和
   `UsageMenuCardExtraUsageSectionView`，包括其 `overlay` 等逃逸 closure。
 
-## Handoff
+## Agent Handoff（集成前）
 
 - Commit SHA：未创建；按协调要求由 coordinator 集成提交。
 - 依赖：`swift-perception` 固定为 `2.0.9`；lock 包含 Perception、MacroTesting、
@@ -89,3 +89,10 @@ updated_at: 2026-08-12
 - 风险：当前 lock 是依据 Perception 2.0.9 与 MacroTesting 0.6.4 的官方 lock/约束预置；
   coordinator 必须用可工作的 Swift 6.2 resolver 复核。macOS 12 的 runtime warning、
   连续订阅测试和 strict-concurrency 诊断尚未动态验证。
+
+### Coordinator finalization
+
+- 集成源码：8053668d98f08db3ebe7d854a0abec2ee77886ca。
+- CI run 31555175138 的 repository checks、两个 Swift test shard 和 Intel compile/package 全部通过。
+- 真机 fake provider 刷新与菜单读取连续成功，未出现 Perception/Observation runtime warning。
+- 本任务状态由 coordinator 更新为 COMPLETE。

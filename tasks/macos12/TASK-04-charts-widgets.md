@@ -1,7 +1,7 @@
 ---
 id: MAC12-04
 title: Charts、Spend 与 Widget 兼容
-status: REVIEW
+status: COMPLETE
 owner: agent-mac12-04
 depends_on: [MAC12-00]
 updated_at: 2026-08-12
@@ -35,7 +35,7 @@ updated_at: 2026-08-12
 - [x] macOS 13+ 图表行为和测试保持不变。
 - [x] 替换 Widget `containerBackground`，检查 Widget family API 可用性。
 - [x] 检查 Heatmap 的焦点、键盘和 Canvas API 最低版本。
-- [ ] 运行 chart 数据模型测试与 Widget snapshot/model 测试。
+- [x] 运行 chart 数据模型测试与 Widget snapshot/model 测试。
 
 ## 验收标准
 
@@ -44,7 +44,7 @@ updated_at: 2026-08-12
 - macOS 13+ 仍显示原图表。
 - Widget target 能以最低 macOS 12 编译。
 
-## Handoff
+## Agent Handoff（集成前）
 
 - Commit SHA：未提交（按 coordinator 要求）；基线
   `98fc394935268dc4eabaeb5131c004d2eee972ad`，由 coordinator 集成共享工作树。
@@ -89,3 +89,10 @@ updated_at: 2026-08-12
   chart 数据模型测试。
 - `MAC12-06`：只在最终整合后启动一次 GUI，验证 Monterey 的五处图表 fallback、Static Switcher 与只读
   provider chips；另在 macOS 13+ 验证原 Charts，在 macOS 14+ 验证五个 AppIntent widgets 仍可配置和切换。
+
+### Coordinator finalization
+
+- Swift 6.2 分片测试、Widget target 编译、打包和 Mach-O 验证全部通过。
+- macOS 12 真机的套餐用量 submenu 显示 Chart unavailable on macOS 12.，并正确呈现 12%/43% 汇总数据。
+- pluginkit 确认 com.steipete.codexbar.widget(0.49.3) 已注册，Widget Extension 在目标机启动。
+- 本任务状态由 coordinator 更新为 COMPLETE。

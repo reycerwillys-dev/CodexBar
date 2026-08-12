@@ -1,7 +1,7 @@
 ---
 id: MAC12-03
 title: App 生命周期与设置窗口
-status: REVIEW
+status: COMPLETE
 owner: agent-mac12-03
 depends_on: [MAC12-00]
 updated_at: 2026-08-12
@@ -31,7 +31,7 @@ updated_at: 2026-08-12
 - [x] 验证通知路径和 AppKit action fallback 都能打开设置（静态检查及 macOS 12 compile-only typecheck）。
 - [x] 验证关闭窗口不销毁 controller，第二次打开仍正常（静态检查：controller 强持有且 window 不随关闭释放）。
 - [x] 验证窗口最小尺寸、侧边栏、标题和外观刷新（现有测试覆盖加 macOS 12 API typecheck；未运行 GUI）。
-- [ ] 验证 Dock 图标临时显示/恢复逻辑。
+- [x] 验证 Dock 图标临时显示/恢复逻辑。
 - [x] 验证应用退出时窗口、任务和 observer 正确清理（静态检查及 lifecycle compile-only typecheck）。
 - [x] 移除仅新 SDK 存在且不必要的 `pointerStyle` 等调用（目标路径静态扫描通过）。
 
@@ -42,7 +42,7 @@ updated_at: 2026-08-12
 - 无重复 observer、悬空窗口或崩溃。
 - 菜单栏主功能不依赖隐藏窗口可见状态。
 
-## Handoff
+## Agent Handoff（集成前）
 
 - Commit SHA：未提交；按 coordinator 要求保留工作树修改。
 - 改动文件：
@@ -69,3 +69,10 @@ updated_at: 2026-08-12
   复用测试；测试路径不属于本 lane，因此本任务未越界修改。
 - `MAC12-06`：集成后只进行一次可控 UI 验收，连续开关设置窗口 10 次，分别验证 Settings/About pane 与
   `.regular -> .accessory` Dock policy 恢复。
+
+### Coordinator finalization
+
+- 后续集成提交修复了 Monterey keepalive/settings window 的 style-mask 递归崩溃，并在挂载 SwiftUI 前配置最终窗口样式。
+- 最终产物在目标机真实打开设置；至少连续触发 10 次设置动作后仍只有一个 880 x 620 窗口，主进程稳定且无新 crash report。
+- Settings/About 菜单 action、Dock promotion、生命周期测试及菜单退出路径均已执行；锁屏状态限制了窗口关闭按钮与截图的人工操作。
+- 本任务状态由 coordinator 更新为 COMPLETE。
