@@ -31,12 +31,23 @@ final class CodexBarSettingsWindowController: NSWindowController {
             codexAccountPromotionCoordinator: codexAccountPromotionCoordinator,
             runProviderLoginFlow: runProviderLoginFlow)
         let hostingController = NSHostingController(rootView: rootView)
-        let window = NSWindow(contentViewController: hostingController)
+        // Establish the structural style before attaching NSHostingController. Mutating
+        // styleMask after a SwiftUI hosting view is attached can recursively re-enter
+        // DefaultWindowStyle on Monterey while AppKit is enumerating the view hierarchy.
+        let window = NSWindow(
+            contentRect: NSRect(
+                x: 0,
+                y: 0,
+                width: SettingsPane.windowWidth,
+                height: SettingsPane.windowHeight),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false)
+        window.contentViewController = hostingController
         super.init(window: window)
 
         window.identifier = NSUserInterfaceItemIdentifier("CodexBarSettingsWindow")
         window.title = selection.pane.title
-        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
         window.isReleasedWhenClosed = false
         window.isRestorable = false
         window.tabbingMode = .disallowed
