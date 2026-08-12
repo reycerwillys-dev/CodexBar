@@ -17,6 +17,7 @@ APP_BUNDLE="${1:?usage: verify_packaged_app_launch.sh /path/to/CodexBar.app}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 SMOKE_SECONDS="${CODEXBAR_LAUNCH_SMOKE_SECONDS:-6}"
+ALLOW_INCONCLUSIVE_GUI_LAUNCH="${CODEXBAR_ALLOW_INCONCLUSIVE_GUI_LAUNCH:-0}"
 # Swift runtime trap signatures for a missing SwiftPM resource bundle. These
 # always hard-fail packaging, even without a GUI session.
 FATAL_PATTERN='Fatal error|could not load resource bundle|unable to find bundle named'
@@ -195,11 +196,12 @@ if [[ "$ALIVE" == "1" ]]; then
   exit 0
 fi
 
-wait "$SMOKE_PID" 2>/dev/null || true
+SMOKE_STATUS=0
+wait "$SMOKE_PID" 2>/dev/null || SMOKE_STATUS=$?
 SMOKE_PID=""
 
-if [[ "$GUI_SESSION" == "0" ]]; then
-  warn "Launch smoke check inconclusive: app exited early without the resource-bundle fatal signature (no Aqua session; likely unrelated to resources)."
+if [[ "$GUI_SESSION" == "0" || "$ALLOW_INCONCLUSIVE_GUI_LAUNCH" == "1" ]]; then
+  warn "Launch smoke check inconclusive: app exited early with status ${SMOKE_STATUS} without the resource-bundle fatal signature; deferring the GUI liveness gate to the target Mac."
   exit 0
 fi
 

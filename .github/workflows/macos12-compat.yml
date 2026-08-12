@@ -191,6 +191,11 @@ jobs:
 
       - name: Build and verify Intel macOS 12 app
         shell: bash
+        env:
+          # The hosted Intel runner's sandboxed direct GUI launch can terminate
+          # before logging. Keep both deterministic resource-bundle probes as
+          # hard gates; MAC12-06 performs the real GUI liveness gate on Monterey.
+          CODEXBAR_ALLOW_INCONCLUSIVE_GUI_LAUNCH: "1"
         run: |
           set -euo pipefail
           ./Scripts/build_macos12_x86_64.sh \
